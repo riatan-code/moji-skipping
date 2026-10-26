@@ -1,20 +1,69 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas =
+  document.getElementById("gameCanvas");
 
-const input = document.getElementById("characterInput");
-const throwButton = document.getElementById("throwButton");
-const result = document.getElementById("result");
+const ctx =
+  canvas.getContext("2d");
 
-const waterY = 270;
+const input =
+  document.getElementById("characterInput");
+
+const throwButton =
+  document.getElementById("throwButton");
+
+const angleInput =
+  document.getElementById("angleInput");
+
+const angleValue =
+  document.getElementById("angleValue");
+
+const distanceValue =
+  document.getElementById("distanceValue");
+
+const result =
+  document.getElementById("result");
+
+const shareButton =
+  document.getElementById("shareButton");
+
+
+const waterY = 280;
+
+const START_X = 80;
+
+const PIXELS_PER_METER = 18;
 
 let animationId = null;
+
+let lastResult = null;
+
+
+// =========================
+// 共通
+// =========================
+
+function clamp(
+  value,
+  min,
+  max
+) {
+
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      value
+    )
+  );
+}
 
 
 // =========================
 // 背景
 // =========================
 
-function drawBackground() {
+function drawBackground(
+  cameraX = 0
+) {
 
   ctx.clearRect(
     0,
@@ -23,8 +72,11 @@ function drawBackground() {
     canvas.height
   );
 
+
   // 空
-  ctx.fillStyle = "#f8fbff";
+
+  ctx.fillStyle =
+    "#f8fbff";
 
   ctx.fillRect(
     0,
@@ -35,7 +87,9 @@ function drawBackground() {
 
 
   // 水
-  ctx.fillStyle = "#d8eef8";
+
+  ctx.fillStyle =
+    "#d8eef8";
 
   ctx.fillRect(
     0,
@@ -46,8 +100,12 @@ function drawBackground() {
 
 
   // 水面
-  ctx.strokeStyle = "#5fa8d3";
-  ctx.lineWidth = 3;
+
+  ctx.strokeStyle =
+    "#5fa8d3";
+
+  ctx.lineWidth =
+    3;
 
   ctx.beginPath();
 
@@ -62,6 +120,80 @@ function drawBackground() {
   );
 
   ctx.stroke();
+
+
+  // =====================
+  // 距離目盛り
+  // =====================
+
+  ctx.font =
+    "13px sans-serif";
+
+  ctx.fillStyle =
+    "#50809a";
+
+  ctx.strokeStyle =
+    "#8ec4dd";
+
+  ctx.lineWidth =
+    1;
+
+
+  const firstMeter =
+    Math.floor(
+      cameraX /
+      PIXELS_PER_METER /
+      10
+    ) * 10;
+
+
+  for (
+    let meters = firstMeter;
+    meters < firstMeter + 100;
+    meters += 10
+  ) {
+
+    const worldX =
+      meters *
+      PIXELS_PER_METER;
+
+
+    const screenX =
+      START_X +
+      worldX -
+      cameraX;
+
+
+    if (
+      screenX < 0 ||
+      screenX > canvas.width
+    ) {
+
+      continue;
+    }
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      screenX,
+      waterY
+    );
+
+    ctx.lineTo(
+      screenX,
+      waterY + 12
+    );
+
+    ctx.stroke();
+
+
+    ctx.fillText(
+      `${meters}m`,
+      screenX + 4,
+      waterY + 28
+    );
+  }
 }
 
 
@@ -87,22 +219,29 @@ function drawCharacter(
     angle
   );
 
-  ctx.fillStyle = "#222";
+
+  ctx.fillStyle =
+    "#222";
+
 
   ctx.font =
     "70px sans-serif";
 
+
   ctx.textAlign =
     "center";
 
+
   ctx.textBaseline =
     "middle";
+
 
   ctx.fillText(
     character,
     0,
     0
   );
+
 
   ctx.restore();
 }
@@ -112,7 +251,9 @@ function drawCharacter(
 // 水しぶき
 // =========================
 
-function drawSplash(x) {
+function drawSplash(
+  x
+) {
 
   ctx.strokeStyle =
     "#ffffff";
@@ -133,15 +274,22 @@ function drawSplash(x) {
 
     ctx.beginPath();
 
+
     ctx.moveTo(
       x,
       waterY
     );
 
+
     ctx.lineTo(
       x + offset,
-      waterY - 12 - Math.abs(offset)
+      waterY -
+      10 -
+      Math.abs(
+        offset
+      )
     );
+
 
     ctx.stroke();
   }
@@ -248,13 +396,6 @@ function analyzeCharacter(
   let sumX =
     0;
 
-  let sumY =
-    0;
-
-
-  // -----------------------
-  // ピクセル取得
-  // -----------------------
 
   for (
     let y = 0;
@@ -269,15 +410,21 @@ function analyzeCharacter(
     ) {
 
       const index =
-        (y * size + x) * 4;
+        (
+          y * size +
+          x
+        ) * 4;
 
 
       if (
-        data[index + 3] > 40
+        data[
+          index + 3
+        ] > 40
       ) {
 
         mask[
-          y * size + x
+          y * size +
+          x
         ] = 1;
 
 
@@ -285,9 +432,6 @@ function analyzeCharacter(
 
         sumX +=
           x;
-
-        sumY +=
-          y;
 
 
         minX =
@@ -341,24 +485,21 @@ function analyzeCharacter(
 
 
   const width =
-    maxX - minX + 1;
+    maxX -
+    minX +
+    1;
 
 
   const height =
-    maxY - minY + 1;
+    maxY -
+    minY +
+    1;
 
-
-  // -----------------------
-  // 横長度
-  // -----------------------
 
   const aspect =
-    width / height;
+    width /
+    height;
 
-
-  // -----------------------
-  // 密度
-  // -----------------------
 
   const density =
     pixels /
@@ -368,13 +509,14 @@ function analyzeCharacter(
     );
 
 
-  // -----------------------
+  // =====================
   // 重心
-  // -----------------------
+  // =====================
 
   const centerX =
     (
-      sumX / pixels -
+      sumX /
+      pixels -
       minX
     ) /
     Math.max(
@@ -383,24 +525,20 @@ function analyzeCharacter(
     );
 
 
-  /*
-    0.5に近いほど
-    左右バランスが良い
-  */
-
   const balance =
     1 -
     Math.min(
       1,
       Math.abs(
-        centerX - 0.5
+        centerX -
+        0.5
       ) * 2
     );
 
 
-  // -----------------------
+  // =====================
   // 左右対称性
-  // -----------------------
+  // =====================
 
   let comparisons =
     0;
@@ -424,29 +562,22 @@ function analyzeCharacter(
       offset++
     ) {
 
-      const leftX =
-        minX + offset;
-
-
-      const rightX =
-        maxX - offset;
-
-
       const left =
         mask[
           y * size +
-          leftX
+          minX +
+          offset
         ];
 
 
       const right =
         mask[
           y * size +
-          rightX
+          maxX -
+          offset
         ];
 
 
-      // 両方空白なら比較しない
       if (
         left ||
         right
@@ -467,25 +598,22 @@ function analyzeCharacter(
 
 
   const symmetry =
-    comparisons > 0
+    comparisons
       ? 1 -
         mismatches /
         comparisons
       : 1;
 
 
-  // -----------------------
+  // =====================
   // 接水幅
-  // -----------------------
-
-  /*
-    文字の下30%を見る
-  */
+  // =====================
 
   const bottomStart =
     Math.floor(
       minY +
-      height * 0.70
+      height *
+      0.70
     );
 
 
@@ -511,7 +639,8 @@ function analyzeCharacter(
 
       if (
         mask[
-          y * size + x
+          y * size +
+          x
         ]
       ) {
 
@@ -566,101 +695,83 @@ function calculateStats(
     );
 
 
-  // -----------------------
-  // 横長性能
-  // -----------------------
-
-  /*
-    「一」のような極端な値を
-    対数で圧縮する
-  */
-
   let flatness =
     (
       Math.log2(
         shape.aspect
-      ) + 2.5
-    ) / 6;
+      ) +
+      2.5
+    ) /
+    6;
 
 
   flatness =
-    Math.max(
+    clamp(
+      flatness,
       0,
-      Math.min(
-        flatness,
-        1
-      )
+      1
     );
 
 
-  // -----------------------
-  // 総合水切り性能
-  // -----------------------
-
   let score =
 
-      flatness * 0.55
+      flatness *
+      0.55
 
-    + shape.symmetry * 0.15
+    + shape.symmetry *
+      0.15
 
-    + shape.balance * 0.15
+    + shape.balance *
+      0.15
 
-    + shape.contact * 0.15;
+    + shape.contact *
+      0.15;
 
-
-  /*
-    極端に縦長の文字には
-    大きなペナルティ
-  */
 
   if (
-    shape.aspect < 0.5
+    shape.aspect <
+    0.5
   ) {
 
     score *=
       0.45 +
-      shape.aspect * 0.5;
+      shape.aspect *
+      0.5;
   }
 
 
   score =
-    Math.max(
+    clamp(
+      score,
       0,
-      Math.min(
-        score,
-        1
-      )
+      1
     );
 
-
-  // -----------------------
-  // 水切り回数
-  // -----------------------
 
   const targetSkips =
     1 +
     Math.round(
-      score * 16
+      score *
+      16
     );
 
 
-  // -----------------------
-  // アニメーション性能
-  // -----------------------
-
   const speed =
-    7 +
-    score * 2;
+    8 +
+    score *
+    2.4;
 
 
   const bounce =
-    2.8 -
-    score * 1.1;
+    2.7 -
+    score *
+    1.0;
 
 
   const retention =
-    0.82 +
-    score * 0.14;
+    0.83 +
+    score *
+    0.14;
 
 
   return {
@@ -695,22 +806,121 @@ function calculateStats(
 
 
 // =========================
-// 初期表示
+// 投げる角度の性能
+// =========================
+
+function calculateAngleFactor(
+  angleDegrees
+) {
+
+  /*
+    8度付近を理想角度とする。
+
+    角度が悪くても
+    完全に0にはしない。
+  */
+
+  const idealAngle =
+    8;
+
+
+  const difference =
+    Math.abs(
+      angleDegrees -
+      idealAngle
+    );
+
+
+  return clamp(
+    1 -
+    difference /
+    22,
+    0.35,
+    1
+  );
+}
+
+
+// =========================
+// 初期画面
 // =========================
 
 function drawInitialScene(
   character = "水"
 ) {
 
-  drawBackground();
+  drawBackground(
+    0
+  );
 
 
   drawCharacter(
     character,
-    90,
-    190,
+    START_X,
+    waterY - 55,
     0
   );
+}
+
+
+// =========================
+// ゲーム終了
+// =========================
+
+function finishThrow(
+  character,
+  skips,
+  distance,
+  angle,
+  stats
+) {
+
+  const finalDistance =
+    Number(
+      distance.toFixed(
+        1
+      )
+    );
+
+
+  distanceValue.textContent =
+    `${finalDistance.toFixed(1)} m`;
+
+
+  result.innerHTML =
+    `
+    <strong>「${character}」</strong>
+    <br>
+    水切り ${skips}回
+    <br>
+    飛距離 ${finalDistance.toFixed(1)}m
+    <br>
+    投射角 ${angle}°
+    `;
+
+
+  lastResult = {
+
+    character,
+
+    skips,
+
+    distance:
+      finalDistance,
+
+    angle,
+
+    score:
+      stats.skipPower
+  };
+
+
+  shareButton.hidden =
+    false;
+
+
+  animationId =
+    null;
 }
 
 
@@ -719,7 +929,8 @@ function drawInitialScene(
 // =========================
 
 function throwCharacter(
-  character
+  character,
+  launchAngle
 ) {
 
   if (
@@ -729,10 +940,11 @@ function throwCharacter(
     cancelAnimationFrame(
       animationId
     );
-
-    animationId =
-      null;
   }
+
+
+  shareButton.hidden =
+    true;
 
 
   const stats =
@@ -741,28 +953,61 @@ function throwCharacter(
     );
 
 
-  let x =
-    70;
+  const angleFactor =
+    calculateAngleFactor(
+      launchAngle
+    );
 
 
-  let y =
-    waterY - 65;
+  /*
+    文字性能 × 投げる角度
+  */
+
+  const effectiveSkips =
+    Math.max(
+      1,
+      Math.round(
+        stats.targetSkips *
+        angleFactor
+      )
+    );
 
 
-  let vx =
-    stats.speed;
+  const radians =
+    launchAngle *
+    Math.PI /
+    180;
 
 
-  let vy =
+  let worldX =
     0;
 
 
+  let y =
+    waterY -
+    55;
+
+
+  let vx =
+    stats.speed *
+    Math.cos(
+      radians
+    );
+
+
+  let vy =
+    -stats.speed *
+    Math.sin(
+      radians
+    );
+
+
   let angle =
-    -0.15;
+    -radians;
 
 
   let rotationSpeed =
-    0.05;
+    0.04;
 
 
   let skips =
@@ -777,7 +1022,7 @@ function throwCharacter(
     0.22;
 
 
-  let splashX =
+  let splashWorldX =
     null;
 
 
@@ -787,14 +1032,7 @@ function throwCharacter(
 
   function animate() {
 
-    drawBackground();
-
-
-    // ---------------------
-    // 移動
-    // ---------------------
-
-    x +=
+    worldX +=
       vx;
 
 
@@ -810,20 +1048,44 @@ function throwCharacter(
       rotationSpeed;
 
 
-    // ---------------------
-    // 水面との接触
-    // ---------------------
+    /*
+      カメラを追従させる
+    */
+
+    const cameraX =
+      Math.max(
+        0,
+        worldX -
+        650
+      );
+
+
+    const screenX =
+      START_X +
+      worldX -
+      cameraX;
+
+
+    drawBackground(
+      cameraX
+    );
+
+
+    // =====================
+    // 水面接触
+    // =====================
 
     if (
-      y >= waterY - 18 &&
+      y >=
+      waterY - 18 &&
       vy > 0
     ) {
 
       skips++;
 
 
-      splashX =
-        x;
+      splashWorldX =
+        worldX;
 
 
       splashFrames =
@@ -831,70 +1093,47 @@ function throwCharacter(
 
 
       /*
-        目標回数に達したら沈む
+        指定回数に達したら沈む
       */
 
       if (
         skips >=
-        stats.targetSkips
+        effectiveSkips
       ) {
 
-        result.innerHTML =
-          `
-          「${character}」
-          水切り ${skips}回
-          <br>
-          横長度：
-          ${stats.aspect.toFixed(2)}
-          <br>
-          左右対称：
-          ${stats.symmetry.toFixed(2)}
-          <br>
-          重心：
-          ${stats.balance.toFixed(2)}
-          <br>
-          接水幅：
-          ${stats.contact.toFixed(2)}
-          <br>
-          総合適性：
-          ${stats.skipPower.toFixed(2)}
-          `;
+        const distance =
+          worldX /
+          PIXELS_PER_METER;
 
 
         drawCharacter(
           character,
-          x,
-          waterY + 18,
+          screenX,
+          waterY + 12,
           angle
         );
 
 
-        animationId =
-          null;
+        finishThrow(
+          character,
+          skips,
+          distance,
+          launchAngle,
+          stats
+        );
+
 
         return;
       }
 
 
-      /*
-        低く細かく跳ねる
-      */
-
       vy =
         -currentBounce;
 
 
-      /*
-        徐々に跳ね幅を小さくする
-      */
-
       currentBounce *=
         0.96;
 
-
-      /*
-        横速度を少しずつ失う
-      */
 
       vx *=
         stats.retention;
@@ -905,20 +1144,28 @@ function throwCharacter(
 
 
       y =
-        waterY - 19;
+        waterY -
+        19;
     }
 
 
-    // ---------------------
+    // =====================
     // 水しぶき
-    // ---------------------
+    // =====================
 
     if (
-      splashFrames > 0
+      splashFrames >
+      0
     ) {
 
+      const splashScreenX =
+        START_X +
+        splashWorldX -
+        cameraX;
+
+
       drawSplash(
-        splashX
+        splashScreenX
       );
 
 
@@ -928,10 +1175,19 @@ function throwCharacter(
 
     drawCharacter(
       character,
-      x,
+      screenX,
       y,
       angle
     );
+
+
+    const distance =
+      worldX /
+      PIXELS_PER_METER;
+
+
+    distanceValue.textContent =
+      `${distance.toFixed(1)} m`;
 
 
     result.textContent =
@@ -939,16 +1195,26 @@ function throwCharacter(
 
 
     /*
-      Canvas外まで行った場合は
-      左に戻して続きを描画
+      安全用終了条件
     */
 
     if (
-      x > canvas.width - 50
+      distance >
+      300 ||
+      vx <
+      0.5
     ) {
 
-      x =
-        70;
+      finishThrow(
+        character,
+        skips,
+        distance,
+        launchAngle,
+        stats
+      );
+
+
+      return;
     }
 
 
@@ -964,7 +1230,21 @@ function throwCharacter(
 
 
 // =========================
-// ボタン
+// 角度スライダー
+// =========================
+
+angleInput.addEventListener(
+  "input",
+  () => {
+
+    angleValue.textContent =
+      `${angleInput.value}°`;
+  }
+);
+
+
+// =========================
+// 投げるボタン
 // =========================
 
 throwButton.addEventListener(
@@ -988,8 +1268,65 @@ throwButton.addEventListener(
     }
 
 
+    const angle =
+      Number(
+        angleInput.value
+      );
+
+
+    distanceValue.textContent =
+      "0.0 m";
+
+
     throwCharacter(
-      character
+      character,
+      angle
+    );
+  }
+);
+
+
+// =========================
+// X共有
+// =========================
+
+shareButton.addEventListener(
+  "click",
+  () => {
+
+    if (
+      !lastResult
+    ) {
+
+      return;
+    }
+
+
+    const text =
+      `文字水切りで「${lastResult.character}」を投げました！
+
+🌊 水切り：${lastResult.skips}回
+📏 飛距離：${lastResult.distance.toFixed(1)}m
+🎯 投射角：${lastResult.angle}°
+
+あなたも最強の文字を探してみよう。
+
+#文字水切り
+
+${window.location.href}`;
+
+
+    const shareUrl =
+      "https://x.com/intent/post?text=" +
+      encodeURIComponent(
+        text
+      );
+
+
+    window.open(
+      shareUrl,
+      "_blank",
+      "noopener,noreferrer"
     );
   }
 );
@@ -1032,27 +1369,37 @@ function (
 
           横長度:
             Number(
-              stats.aspect.toFixed(2)
+              stats.aspect.toFixed(
+                2
+              )
             ),
 
           左右対称:
             Number(
-              stats.symmetry.toFixed(2)
+              stats.symmetry.toFixed(
+                2
+              )
             ),
 
           重心:
             Number(
-              stats.balance.toFixed(2)
+              stats.balance.toFixed(
+                2
+              )
             ),
 
           接水幅:
             Number(
-              stats.contact.toFixed(2)
+              stats.contact.toFixed(
+                2
+              )
             ),
 
           総合適性:
             Number(
-              stats.skipPower.toFixed(2)
+              stats.skipPower.toFixed(
+                2
+              )
             ),
 
           予測回数:
