@@ -2,90 +2,178 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>文字水切り</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
 
 <body>
 
-<main class="container">
+<main class="app">
 
-  <h1>文字水切り</h1>
+  <header class="hero">
 
-  <p class="description">
-    文字と投げる角度を選んで、水切り記録を競おう。
-  </p>
+    <div class="eyebrow">
+      MOJI SKIPPING
+    </div>
 
-  <div class="controls">
+    <h1>
+      文字水切り
+    </h1>
 
-    <input
-      id="characterInput"
-      type="text"
-      value="水"
-      aria-label="投げる文字"
+    <p>
+      文字を引っぱって、最長飛距離を狙え。
+    </p>
+
+  </header>
+
+
+  <section class="setup">
+
+    <label
+      class="character-box"
+      for="characterInput"
     >
 
-    <button id="throwButton">
-      投げる
-    </button>
+      <span>
+        THROW CHARACTER
+      </span>
 
-  </div>
+      <input
+        id="characterInput"
+        type="text"
+        value="水"
+        autocomplete="off"
+        aria-label="投げる文字"
+      >
 
-
-  <div class="angle-control">
-
-    <label for="angleInput">
-      投げる角度：
-      <strong id="angleValue">8°</strong>
     </label>
 
-    <input
-      id="angleInput"
-      type="range"
-      min="-5"
-      max="25"
-      value="8"
-      step="1"
+
+    <div class="instruction">
+
+      <strong>
+        文字を左下へ引っぱって離す
+      </strong>
+
+      <span>
+        引く方向と長さで角度・パワーが変化
+      </span>
+
+    </div>
+
+  </section>
+
+
+  <section class="stats">
+
+    <div class="stat">
+
+      <span>
+        DISTANCE
+      </span>
+
+      <strong id="distanceValue">
+        0.0m
+      </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+      <span>
+        SKIPS
+      </span>
+
+      <strong id="skipsValue">
+        0
+      </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+      <span>
+        ANGLE
+      </span>
+
+      <strong id="angleValue">
+        8°
+      </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+      <span>
+        POWER
+      </span>
+
+      <strong id="powerValue">
+        75%
+      </strong>
+
+    </div>
+
+  </section>
+
+
+  <section class="game-panel">
+
+    <canvas
+      id="gameCanvas"
+      width="1100"
+      height="480"
+    ></canvas>
+
+    <div
+      id="canvasHint"
+      class="canvas-hint"
     >
+      文字をつかんで引っぱる
+    </div>
 
-  </div>
-
-
-  <div class="distance-display">
-    飛距離
-    <strong id="distanceValue">
-      0.0 m
-    </strong>
-  </div>
+  </section>
 
 
-  <canvas
-    id="gameCanvas"
-    width="900"
-    height="400"
-  ></canvas>
-
-
-  <div id="result">
-    文字と角度を選んで投げてください
-  </div>
+  <section
+    id="result"
+    class="result"
+  >
+    好きな文字を入力して挑戦してください
+  </section>
 
 
   <button
     id="shareButton"
     class="share-button"
+    type="button"
     hidden
   >
     Xで結果を共有
   </button>
 
+
+  <p class="footer-note">
+    文字の形・投射角・パワーによって記録が変化します。
+  </p>
+
 </main>
 
 
-<script src="main.js?v=3"></script>
+<script src="main.js?v=4"></script>
 
 </body>
 </html>
