@@ -5,29 +5,19 @@ const input = document.getElementById("characterInput");
 const throwButton = document.getElementById("throwButton");
 const result = document.getElementById("result");
 
-function drawScene(character = "水") {
+const waterY = 270;
 
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+let animationId = null;
+
+function drawBackground() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // 空
   ctx.fillStyle = "#f8fbff";
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // 水
-  const waterY = 270;
-
   ctx.fillStyle = "#d8eef8";
-
   ctx.fillRect(
     0,
     waterY,
@@ -43,41 +33,124 @@ function drawScene(character = "水") {
   ctx.moveTo(0, waterY);
   ctx.lineTo(canvas.width, waterY);
   ctx.stroke();
+}
 
-  // 投げる文字
+function drawCharacter(character, x, y, angle) {
+  ctx.save();
+
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
   ctx.fillStyle = "#222";
-
-  ctx.font = "80px sans-serif";
+  ctx.font = "70px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  ctx.fillText(
+  ctx.fillText(character, 0, 0);
+
+  ctx.restore();
+}
+
+function drawInitialScene(character = "水") {
+  drawBackground();
+
+  drawCharacter(
     character,
     100,
-    180
+    180,
+    0
   );
+}
+
+function throwCharacter(character) {
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+  }
+
+  let x = 100;
+  let y = 180;
+
+  let vx = 10;
+  let vy = -1;
+
+  let angle = 0;
+  let rotationSpeed = 0.15;
+
+  let skips = 0;
+
+  const gravity = 0.22;
+
+  function animate() {
+    drawBackground();
+
+    x += vx;
+    y += vy;
+
+    vy += gravity;
+
+    angle += rotationSpeed;
+
+    // 水面に接触
+    if (y >= waterY - 25 && vy > 0) {
+      skips++;
+
+      // 水面で跳ね返る
+      vy = -4.5;
+
+      // 徐々に速度を落とす
+      vx *= 0.88;
+
+      rotationSpeed *= 0.9;
+
+      y = waterY - 26;
+    }
+
+    drawCharacter(
+      character,
+      x,
+      y,
+      angle
+    );
+
+    result.textContent =
+      `水切り ${skips}回`;
+
+    // 終了条件
+    if (
+      x > canvas.width + 50 ||
+      vx < 1.8 ||
+      skips >= 15
+    ) {
+      result.textContent =
+        `「${character}」 水切り ${skips}回`;
+
+      animationId = null;
+
+      return;
+    }
+
+    animationId =
+      requestAnimationFrame(animate);
+  }
+
+  animate();
 }
 
 throwButton.addEventListener(
   "click",
   () => {
-
     const character =
       Array.from(input.value.trim())[0];
 
     if (!character) {
-
       result.textContent =
         "文字を入力してください";
 
       return;
     }
 
-    drawScene(character);
-
-    result.textContent =
-      `「${character}」を投げる準備完了`;
+    throwCharacter(character);
   }
 );
 
-drawScene("水");
+drawInitialScene("水");
