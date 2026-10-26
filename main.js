@@ -25,7 +25,6 @@ function drawBackground() {
 
   // 空
   ctx.fillStyle = "#f8fbff";
-
   ctx.fillRect(
     0,
     0,
@@ -35,7 +34,6 @@ function drawBackground() {
 
   // 水
   ctx.fillStyle = "#d8eef8";
-
   ctx.fillRect(
     0,
     waterY,
@@ -48,17 +46,8 @@ function drawBackground() {
   ctx.lineWidth = 3;
 
   ctx.beginPath();
-
-  ctx.moveTo(
-    0,
-    waterY
-  );
-
-  ctx.lineTo(
-    canvas.width,
-    waterY
-  );
-
+  ctx.moveTo(0, waterY);
+  ctx.lineTo(canvas.width, waterY);
   ctx.stroke();
 }
 
@@ -76,25 +65,14 @@ function drawCharacter(
 
   ctx.save();
 
-  ctx.translate(
-    x,
-    y
-  );
-
-  ctx.rotate(
-    angle
-  );
+  ctx.translate(x, y);
+  ctx.rotate(angle);
 
   ctx.fillStyle = "#222";
+  ctx.font = "70px sans-serif";
 
-  ctx.font =
-    "70px sans-serif";
-
-  ctx.textAlign =
-    "center";
-
-  ctx.textBaseline =
-    "middle";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
   ctx.fillText(
     character,
@@ -107,6 +85,41 @@ function drawCharacter(
 
 
 // =========================
+// 水しぶき
+// =========================
+
+function drawSplash(x) {
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+
+  for (
+    let i = 0;
+    i < 5;
+    i++
+  ) {
+
+    const offset =
+      (i - 2) * 7;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x,
+      waterY
+    );
+
+    ctx.lineTo(
+      x + offset,
+      waterY - 12 - Math.abs(offset)
+    );
+
+    ctx.stroke();
+  }
+}
+
+
+// =========================
 // 文字解析
 // =========================
 
@@ -115,17 +128,13 @@ function analyzeCharacter(
 ) {
 
   const tempCanvas =
-    document.createElement(
-      "canvas"
-    );
+    document.createElement("canvas");
 
   tempCanvas.width = 220;
   tempCanvas.height = 220;
 
   const tempCtx =
-    tempCanvas.getContext(
-      "2d"
-    );
+    tempCanvas.getContext("2d");
 
 
   tempCtx.clearRect(
@@ -136,17 +145,13 @@ function analyzeCharacter(
   );
 
 
-  tempCtx.fillStyle =
-    "black";
-
+  tempCtx.fillStyle = "black";
 
   tempCtx.font =
     "170px sans-serif";
 
-
   tempCtx.textAlign =
     "center";
-
 
   tempCtx.textBaseline =
     "middle";
@@ -196,7 +201,6 @@ function analyzeCharacter(
       const index =
         (y * 220 + x) * 4;
 
-
       const alpha =
         data[index + 3];
 
@@ -207,13 +211,11 @@ function analyzeCharacter(
 
         pixels++;
 
-
         minX =
           Math.min(
             minX,
             x
           );
-
 
         maxX =
           Math.max(
@@ -221,13 +223,11 @@ function analyzeCharacter(
             x
           );
 
-
         minY =
           Math.min(
             minY,
             y
           );
-
 
         maxY =
           Math.max(
@@ -253,12 +253,10 @@ function analyzeCharacter(
     );
 
 
-  // 横長さ
   const aspect =
     width / height;
 
 
-  // 文字がどれくらい詰まっているか
   const density =
     pixels /
     (width * height);
@@ -274,7 +272,7 @@ function analyzeCharacter(
 
 
 // =========================
-// 性能計算
+// 文字性能
 // =========================
 
 function calculateStats(
@@ -288,106 +286,109 @@ function calculateStats(
 
 
   /*
-    横長文字ほど強い。
-
-    aspect
-    一 → 大きい
-    水 → 約1
-    丨 → 小さい
+    aspect をそのまま使うと
+    「一」が極端に強くなりすぎるので
+    対数で圧縮する。
   */
 
+  const flatScore =
+    Math.log2(
+      shape.aspect + 1
+    );
 
-  const aspect =
-    shape.aspect;
 
+  /*
+    水切り性能
 
-  // 水切り能力
+    横長ほど高評価。
+    密度が高すぎる文字は少し重くする。
+  */
+
   let skipPower =
-    0.7 +
-    aspect * 1.4;
+    1 +
+    flatScore * 2.2 -
+    shape.density * 0.8;
 
 
   skipPower =
     Math.max(
-      0.8,
+      0.5,
       Math.min(
         skipPower,
-        5.5
+        8
       )
     );
 
 
   /*
-    密度が高すぎる文字は
-    少し重い扱いにする
+    最終的に狙う水切り回数。
+
+    ここがゲームバランスの中心。
   */
 
-  const weight =
-    0.7 +
-    shape.density * 1.6;
+  let targetSkips =
+    Math.round(
+      2 +
+      skipPower * 2
+    );
 
 
-  // 水面で跳ねる強さ
-
-  let bounce =
-    1.4 +
-    skipPower * 0.55 -
-    weight * 0.20;
-
-
-  bounce =
+  targetSkips =
     Math.max(
-      1.2,
+      1,
       Math.min(
-        bounce,
-        4.2
+        targetSkips,
+        20
       )
     );
 
 
-  // 横方向速度
+  /*
+    強い文字ほど
 
-  let speed =
-    5.3 +
-    skipPower * 0.35;
+    ・横速度が高い
+    ・低く跳ねる
+    ・速度を維持する
+
+    ようにする。
+  */
+
+  const speed =
+    7 +
+    skipPower * 0.25;
 
 
-  speed =
+  const bounce =
+    Math.max(
+      1.3,
+      3.2 -
+      skipPower * 0.18
+    );
+
+
+  const retention =
     Math.min(
-      speed,
-      7
-    );
-
-
-  // 速度維持性能
-
-  let retention =
-    0.76 +
-    skipPower * 0.035;
-
-
-  retention =
-    Math.max(
-      0.76,
-      Math.min(
-        retention,
-        0.93
-      )
+      0.97,
+      0.84 +
+      skipPower * 0.015
     );
 
 
   return {
 
-    aspect,
+    aspect:
+      shape.aspect,
 
     density:
       shape.density,
 
     skipPower,
 
-    bounce,
+    targetSkips,
 
     speed,
+
+    bounce,
 
     retention
   };
@@ -395,7 +396,7 @@ function calculateStats(
 
 
 // =========================
-// 初期画面
+// 初期表示
 // =========================
 
 function drawInitialScene(
@@ -404,11 +405,10 @@ function drawInitialScene(
 
   drawBackground();
 
-
   drawCharacter(
     character,
-    100,
-    180,
+    90,
+    190,
     0
   );
 }
@@ -423,7 +423,7 @@ function throwCharacter(
 ) {
 
   if (
-    animationId
+    animationId !== null
   ) {
 
     cancelAnimationFrame(
@@ -438,12 +438,10 @@ function throwCharacter(
     );
 
 
-  let x =
-    80;
-
+  let x = 70;
 
   let y =
-    190;
+    waterY - 65;
 
 
   let vx =
@@ -451,27 +449,35 @@ function throwCharacter(
 
 
   let vy =
-    -1.2;
-
-
-  let angle =
     0;
 
 
+  let angle =
+    -0.15;
+
+
   let rotationSpeed =
-    0.12;
+    0.05;
 
 
   let skips =
     0;
 
 
-  const gravity =
-    0.38;
-
-
   let currentBounce =
     stats.bounce;
+
+
+  const gravity =
+    0.22;
+
+
+  let splashX =
+    null;
+
+
+  let splashFrames =
+    0;
 
 
   function animate() {
@@ -479,54 +485,122 @@ function throwCharacter(
     drawBackground();
 
 
+    // ---------------------
+    // 移動
+    // ---------------------
+
     x += vx;
 
     y += vy;
 
-
-    vy +=
-      gravity;
+    vy += gravity;
 
 
     angle +=
       rotationSpeed;
 
 
-    // =====================
-    // 水面への衝突
-    // =====================
+    // ---------------------
+    // 水面との接触
+    // ---------------------
 
     if (
-      y >= waterY - 27 &&
+      y >= waterY - 18 &&
       vy > 0
     ) {
 
       skips++;
 
 
+      splashX =
+        x;
+
+      splashFrames =
+        5;
+
+
       /*
-        跳ねるたびに
-        少しずつ弱くなる
+        目標回数に達したら沈む
+      */
+
+      if (
+        skips >= stats.targetSkips
+      ) {
+
+        result.innerHTML =
+          `
+          「${character}」
+          水切り ${skips}回
+          <br>
+          横長度：
+          ${stats.aspect.toFixed(2)}
+          <br>
+          水切り適性：
+          ${stats.skipPower.toFixed(2)}
+          `;
+
+
+        drawCharacter(
+          character,
+          x,
+          waterY + 18,
+          angle
+        );
+
+
+        animationId =
+          null;
+
+        return;
+      }
+
+
+      /*
+        低く細かく跳ねる
       */
 
       vy =
         -currentBounce;
 
 
-      currentBounce *=
-        0.91;
+      /*
+        徐々に跳ね幅を小さくする
+      */
 
+      currentBounce *=
+        0.96;
+
+
+      /*
+        横速度も少しずつ失う
+      */
 
       vx *=
         stats.retention;
 
 
       rotationSpeed *=
-        0.92;
+        0.96;
 
 
       y =
-        waterY - 28;
+        waterY - 19;
+    }
+
+
+    // ---------------------
+    // 水しぶき
+    // ---------------------
+
+    if (
+      splashFrames > 0
+    ) {
+
+      drawSplash(
+        splashX
+      );
+
+      splashFrames--;
     }
 
 
@@ -542,47 +616,18 @@ function throwCharacter(
       `水切り ${skips}回`;
 
 
-    // =====================
-    // 終了
-    // =====================
+    /*
+      Canvas外まで行った場合は
+      左に戻して続きを描画。
 
-    const tooSlow =
-      vx < 1.4;
-
-
-    const bounceTooWeak =
-      currentBounce < 0.75;
-
-
-    const outside =
-      x > canvas.width + 50;
-
+      ゲーム上の飛距離は継続している扱い。
+    */
 
     if (
-      tooSlow ||
-      bounceTooWeak ||
-      outside ||
-      skips >= 30
+      x > canvas.width - 50
     ) {
 
-      result.innerHTML =
-        `
-        「${character}」
-        水切り ${skips}回
-        <br>
-        横長度：
-        ${stats.aspect.toFixed(2)}
-        <br>
-        水切り適性：
-        ${stats.skipPower.toFixed(2)}
-        `;
-
-
-      animationId =
-        null;
-
-
-      return;
+      x = 70;
     }
 
 
