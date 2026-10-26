@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #f5f7fa;
+  color: #222;
+}
+
+.container {
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.description {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+#characterInput {
+  width: 90px;
+  height: 60px;
+
+  font-size: 36px;
+  text-align: center;
+
+  border: 2px solid #ccc;
+  border-radius: 10px;
+}
+
+#throwButton {
+  padding: 0 30px;
+
+  font-size: 18px;
+  font-weight: bold;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #222;
+  color: white;
+
+  cursor: pointer;
+}
+
+#throwButton:hover {
+  opacity: 0.8;
+}
+
+#gameCanvas {
+  display: block;
+
+  width: 100%;
+  height: auto;
+
+  background: white;
+
+  border: 1px solid #ddd;
+  border-radius: 12px;
+}
+
+#result {
+  margin-top: 20px;
+
+  font-size: 22px;
+  font-weight: bold;
+}
