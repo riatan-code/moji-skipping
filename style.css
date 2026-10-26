@@ -86,3 +86,47 @@ h1 {
   font-size: 22px;
   font-weight: bold;
 }
+
+.angle-control {
+  max-width: 420px;
+  margin: 0 auto 20px;
+}
+
+.angle-control label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+#angleInput {
+  width: 100%;
+}
+
+.distance-display {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+#distanceValue {
+  font-size: 28px;
+  margin-left: 8px;
+}
+
+.share-button {
+  margin-top: 18px;
+  padding: 12px 24px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #111;
+  color: white;
+
+  font-size: 16px;
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+.share-button:hover {
+  opacity: 0.8;
+}
