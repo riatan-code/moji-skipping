@@ -11,43 +11,81 @@
 
 <body>
 
-  <main class="container">
+<main class="container">
 
-    <h1>文字水切り</h1>
+  <h1>文字水切り</h1>
 
-    <p class="description">
-      好きな文字を投げて、水切り記録を競おう。
-    </p>
+  <p class="description">
+    文字と投げる角度を選んで、水切り記録を競おう。
+  </p>
 
-    <div class="controls">
+  <div class="controls">
 
-      <input
-        id="characterInput"
-        type="text"
-        maxlength="2"
-        value="水"
-        aria-label="投げる文字"
-      >
+    <input
+      id="characterInput"
+      type="text"
+      value="水"
+      aria-label="投げる文字"
+    >
 
-      <button id="throwButton">
-        投げる
-      </button>
+    <button id="throwButton">
+      投げる
+    </button>
 
-    </div>
+  </div>
 
-    <canvas
-      id="gameCanvas"
-      width="900"
-      height="400"
-    ></canvas>
 
-    <div id="result">
-      文字を入力して投げてください
-    </div>
+  <div class="angle-control">
 
-  </main>
+    <label for="angleInput">
+      投げる角度：
+      <strong id="angleValue">8°</strong>
+    </label>
 
-  <script src="main.js?v=2"></script>
+    <input
+      id="angleInput"
+      type="range"
+      min="-5"
+      max="25"
+      value="8"
+      step="1"
+    >
+
+  </div>
+
+
+  <div class="distance-display">
+    飛距離
+    <strong id="distanceValue">
+      0.0 m
+    </strong>
+  </div>
+
+
+  <canvas
+    id="gameCanvas"
+    width="900"
+    height="400"
+  ></canvas>
+
+
+  <div id="result">
+    文字と角度を選んで投げてください
+  </div>
+
+
+  <button
+    id="shareButton"
+    class="share-button"
+    hidden
+  >
+    Xで結果を共有
+  </button>
+
+</main>
+
+
+<script src="main.js?v=3"></script>
 
 </body>
 </html>
