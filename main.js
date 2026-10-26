@@ -10,17 +10,32 @@ const waterY = 270;
 let animationId = null;
 
 
-// -------------------------
+// =========================
 // 背景
-// -------------------------
+// =========================
 
 function drawBackground() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  // 空
   ctx.fillStyle = "#f8fbff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  // 水
   ctx.fillStyle = "#d8eef8";
+
   ctx.fillRect(
     0,
     waterY,
@@ -28,74 +43,119 @@ function drawBackground() {
     canvas.height - waterY
   );
 
+  // 水面
   ctx.strokeStyle = "#5fa8d3";
   ctx.lineWidth = 3;
 
   ctx.beginPath();
-  ctx.moveTo(0, waterY);
-  ctx.lineTo(canvas.width, waterY);
+
+  ctx.moveTo(
+    0,
+    waterY
+  );
+
+  ctx.lineTo(
+    canvas.width,
+    waterY
+  );
+
   ctx.stroke();
 }
 
 
-// -------------------------
+// =========================
 // 文字描画
-// -------------------------
+// =========================
 
-function drawCharacter(character, x, y, angle) {
+function drawCharacter(
+  character,
+  x,
+  y,
+  angle
+) {
+
   ctx.save();
 
-  ctx.translate(x, y);
-  ctx.rotate(angle);
+  ctx.translate(
+    x,
+    y
+  );
+
+  ctx.rotate(
+    angle
+  );
 
   ctx.fillStyle = "#222";
-  ctx.font = "70px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
 
-  ctx.fillText(character, 0, 0);
+  ctx.font =
+    "70px sans-serif";
+
+  ctx.textAlign =
+    "center";
+
+  ctx.textBaseline =
+    "middle";
+
+  ctx.fillText(
+    character,
+    0,
+    0
+  );
 
   ctx.restore();
 }
 
 
-// -------------------------
-// 文字形状を解析
-// -------------------------
+// =========================
+// 文字解析
+// =========================
 
-function analyzeCharacter(character) {
+function analyzeCharacter(
+  character
+) {
 
   const tempCanvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
-  tempCanvas.width = 200;
-  tempCanvas.height = 200;
+  tempCanvas.width = 220;
+  tempCanvas.height = 220;
 
   const tempCtx =
-    tempCanvas.getContext("2d");
+    tempCanvas.getContext(
+      "2d"
+    );
+
 
   tempCtx.clearRect(
     0,
     0,
-    200,
-    200
+    220,
+    220
   );
 
-  tempCtx.fillStyle = "black";
+
+  tempCtx.fillStyle =
+    "black";
+
 
   tempCtx.font =
-    "160px sans-serif";
+    "170px sans-serif";
+
 
   tempCtx.textAlign =
     "center";
 
+
   tempCtx.textBaseline =
     "middle";
 
+
   tempCtx.fillText(
     character,
-    100,
-    100
+    110,
+    110
   );
 
 
@@ -103,171 +163,247 @@ function analyzeCharacter(character) {
     tempCtx.getImageData(
       0,
       0,
-      200,
-      200
+      220,
+      220
     );
+
 
   const data =
     imageData.data;
 
 
-  let minX = 200;
+  let minX = 220;
   let maxX = 0;
 
-  let minY = 200;
+  let minY = 220;
   let maxY = 0;
 
-  let pixelCount = 0;
+  let pixels = 0;
 
 
   for (
     let y = 0;
-    y < 200;
+    y < 220;
     y++
   ) {
 
     for (
       let x = 0;
-      x < 200;
+      x < 220;
       x++
     ) {
 
       const index =
-        (y * 200 + x) * 4;
+        (y * 220 + x) * 4;
+
 
       const alpha =
         data[index + 3];
 
 
-      if (alpha > 30) {
+      if (
+        alpha > 40
+      ) {
 
-        pixelCount++;
+        pixels++;
 
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
 
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
+        minX =
+          Math.min(
+            minX,
+            x
+          );
+
+
+        maxX =
+          Math.max(
+            maxX,
+            x
+          );
+
+
+        minY =
+          Math.min(
+            minY,
+            y
+          );
+
+
+        maxY =
+          Math.max(
+            maxY,
+            y
+          );
       }
     }
   }
 
 
   const width =
-    maxX - minX;
+    Math.max(
+      1,
+      maxX - minX
+    );
+
 
   const height =
-    maxY - minY;
+    Math.max(
+      1,
+      maxY - minY
+    );
 
 
-  const widthRatio =
-    width / 160;
+  // 横長さ
+  const aspect =
+    width / height;
 
-  const heightRatio =
-    height / 160;
 
-  const areaRatio =
-    pixelCount / (200 * 200);
+  // 文字がどれくらい詰まっているか
+  const density =
+    pixels /
+    (width * height);
 
 
   return {
-    widthRatio,
-    heightRatio,
-    areaRatio
+    width,
+    height,
+    aspect,
+    density
   };
 }
 
 
-// -------------------------
+// =========================
 // 性能計算
-// -------------------------
+// =========================
 
-function calculateStats(character) {
+function calculateStats(
+  character
+) {
 
   const shape =
-    analyzeCharacter(character);
-
-
-  // 横に広いほど水切り向き
-
-  const flatness =
-    shape.widthRatio /
-    Math.max(
-      shape.heightRatio,
-      0.1
+    analyzeCharacter(
+      character
     );
 
 
-  // 面積が大きいほど重い
+  /*
+    横長文字ほど強い。
+
+    aspect
+    一 → 大きい
+    水 → 約1
+    丨 → 小さい
+  */
+
+
+  const aspect =
+    shape.aspect;
+
+
+  // 水切り能力
+  let skipPower =
+    0.7 +
+    aspect * 1.4;
+
+
+  skipPower =
+    Math.max(
+      0.8,
+      Math.min(
+        skipPower,
+        5.5
+      )
+    );
+
+
+  /*
+    密度が高すぎる文字は
+    少し重い扱いにする
+  */
 
   const weight =
-    shape.areaRatio * 10;
+    0.7 +
+    shape.density * 1.6;
 
 
-  // 初速
-
-  const speed =
-    9 +
-    flatness * 1.3;
-
-
-  // 跳ねやすさ
+  // 水面で跳ねる強さ
 
   let bounce =
-    3.5 +
-    flatness * 1.2;
-
-
-  bounce -=
-    weight * 0.15;
+    1.4 +
+    skipPower * 0.55 -
+    weight * 0.20;
 
 
   bounce =
     Math.max(
-      2.5,
+      1.2,
       Math.min(
         bounce,
-        7
+        4.2
       )
     );
 
 
-  // 横に広いほど速度維持
+  // 横方向速度
 
-  let friction =
-    0.80 +
-    flatness * 0.025;
+  let speed =
+    5.3 +
+    skipPower * 0.35;
 
 
-  friction =
+  speed =
+    Math.min(
+      speed,
+      7
+    );
+
+
+  // 速度維持性能
+
+  let retention =
+    0.76 +
+    skipPower * 0.035;
+
+
+  retention =
     Math.max(
-      0.80,
+      0.76,
       Math.min(
-        friction,
-        0.94
+        retention,
+        0.93
       )
     );
 
 
   return {
-    speed,
+
+    aspect,
+
+    density:
+      shape.density,
+
+    skipPower,
+
     bounce,
-    friction,
-    flatness,
-    weight
+
+    speed,
+
+    retention
   };
 }
 
 
-// -------------------------
-// 初期表示
-// -------------------------
+// =========================
+// 初期画面
+// =========================
 
 function drawInitialScene(
   character = "水"
 ) {
 
   drawBackground();
+
 
   drawCharacter(
     character,
@@ -278,15 +414,18 @@ function drawInitialScene(
 }
 
 
-// -------------------------
+// =========================
 // 投げる
-// -------------------------
+// =========================
 
 function throwCharacter(
   character
 ) {
 
-  if (animationId) {
+  if (
+    animationId
+  ) {
+
     cancelAnimationFrame(
       animationId
     );
@@ -299,28 +438,40 @@ function throwCharacter(
     );
 
 
-  let x = 100;
-  let y = 180;
+  let x =
+    80;
+
+
+  let y =
+    190;
 
 
   let vx =
     stats.speed;
 
 
-  let vy = -1.5;
+  let vy =
+    -1.2;
 
 
-  let angle = 0;
+  let angle =
+    0;
+
 
   let rotationSpeed =
-    0.13;
+    0.12;
 
 
-  let skips = 0;
+  let skips =
+    0;
 
 
   const gravity =
-    0.22;
+    0.38;
+
+
+  let currentBounce =
+    stats.bounce;
 
 
   function animate() {
@@ -333,37 +484,49 @@ function throwCharacter(
     y += vy;
 
 
-    vy += gravity;
+    vy +=
+      gravity;
 
 
     angle +=
       rotationSpeed;
 
 
-    // 水面
+    // =====================
+    // 水面への衝突
+    // =====================
 
     if (
-      y >= waterY - 25 &&
+      y >= waterY - 27 &&
       vy > 0
     ) {
 
       skips++;
 
 
+      /*
+        跳ねるたびに
+        少しずつ弱くなる
+      */
+
       vy =
-        -stats.bounce;
+        -currentBounce;
+
+
+      currentBounce *=
+        0.91;
 
 
       vx *=
-        stats.friction;
+        stats.retention;
 
 
       rotationSpeed *=
-        0.9;
+        0.92;
 
 
       y =
-        waterY - 26;
+        waterY - 28;
     }
 
 
@@ -379,9 +542,26 @@ function throwCharacter(
       `水切り ${skips}回`;
 
 
+    // =====================
+    // 終了
+    // =====================
+
+    const tooSlow =
+      vx < 1.4;
+
+
+    const bounceTooWeak =
+      currentBounce < 0.75;
+
+
+    const outside =
+      x > canvas.width + 50;
+
+
     if (
-      x > canvas.width + 50 ||
-      vx < 1.5 ||
+      tooSlow ||
+      bounceTooWeak ||
+      outside ||
       skips >= 30
     ) {
 
@@ -390,10 +570,17 @@ function throwCharacter(
         「${character}」
         水切り ${skips}回
         <br>
-        横長度 ${stats.flatness.toFixed(2)}
+        横長度：
+        ${stats.aspect.toFixed(2)}
+        <br>
+        水切り適性：
+        ${stats.skipPower.toFixed(2)}
         `;
 
-      animationId = null;
+
+      animationId =
+        null;
+
 
       return;
     }
@@ -410,9 +597,9 @@ function throwCharacter(
 }
 
 
-// -------------------------
+// =========================
 // ボタン
-// -------------------------
+// =========================
 
 throwButton.addEventListener(
   "click",
@@ -424,7 +611,9 @@ throwButton.addEventListener(
       )[0];
 
 
-    if (!character) {
+    if (
+      !character
+    ) {
 
       result.textContent =
         "文字を入力してください";
@@ -440,4 +629,6 @@ throwButton.addEventListener(
 );
 
 
-drawInitialScene("水");
+drawInitialScene(
+  "水"
+);
