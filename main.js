@@ -1,40 +1,91 @@
 const canvas =
-  document.getElementById("gameCanvas");
+  document.getElementById(
+    "gameCanvas"
+  );
 
 const ctx =
-  canvas.getContext("2d");
+  canvas.getContext(
+    "2d"
+  );
 
 const input =
-  document.getElementById("characterInput");
-
-const throwButton =
-  document.getElementById("throwButton");
-
-const angleInput =
-  document.getElementById("angleInput");
-
-const angleValue =
-  document.getElementById("angleValue");
-
-const distanceValue =
-  document.getElementById("distanceValue");
+  document.getElementById(
+    "characterInput"
+  );
 
 const result =
-  document.getElementById("result");
+  document.getElementById(
+    "result"
+  );
 
 const shareButton =
-  document.getElementById("shareButton");
+  document.getElementById(
+    "shareButton"
+  );
+
+const distanceValue =
+  document.getElementById(
+    "distanceValue"
+  );
+
+const skipsValue =
+  document.getElementById(
+    "skipsValue"
+  );
+
+const angleValue =
+  document.getElementById(
+    "angleValue"
+  );
+
+const powerValue =
+  document.getElementById(
+    "powerValue"
+  );
+
+const canvasHint =
+  document.getElementById(
+    "canvasHint"
+  );
 
 
-const waterY = 280;
+const WATER_Y = 320;
 
-const START_X = 80;
+const START_X = 130;
 
-const PIXELS_PER_METER = 18;
+const START_Y =
+  WATER_Y - 48;
 
-let animationId = null;
+const PIXELS_PER_METER =
+  17;
 
-let lastResult = null;
+
+let animationId =
+  null;
+
+let aiming =
+  false;
+
+let pointerId =
+  null;
+
+let aimPointer =
+  null;
+
+let aimAngle =
+  8;
+
+let aimPower =
+  0.75;
+
+let dragDistance =
+  0;
+
+let lastResult =
+  null;
+
+let particles =
+  [];
 
 
 // =========================
@@ -57,6 +108,43 @@ function clamp(
 }
 
 
+function getCharacter() {
+
+  return Array.from(
+    input.value.trim()
+  )[0] || "水";
+}
+
+
+function getPointerPosition(
+  event
+) {
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  return {
+
+    x:
+      (
+        event.clientX -
+        rect.left
+      ) *
+      canvas.width /
+      rect.width,
+
+    y:
+      (
+        event.clientY -
+        rect.top
+      ) *
+      canvas.height /
+      rect.height
+  };
+}
+
+
 // =========================
 // 背景
 // =========================
@@ -75,81 +163,278 @@ function drawBackground(
 
   // 空
 
+  const sky =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      WATER_Y
+    );
+
+
+  sky.addColorStop(
+    0,
+    "#edfaff"
+  );
+
+  sky.addColorStop(
+    0.62,
+    "#dff4fc"
+  );
+
+  sky.addColorStop(
+    1,
+    "#cbeaf5"
+  );
+
+
   ctx.fillStyle =
-    "#f8fbff";
+    sky;
+
 
   ctx.fillRect(
     0,
     0,
     canvas.width,
-    canvas.height
+    WATER_Y
   );
+
+
+  // 太陽
+
+  const sun =
+    ctx.createRadialGradient(
+      880,
+      80,
+      2,
+      880,
+      80,
+      100
+    );
+
+
+  sun.addColorStop(
+    0,
+    "rgba(255,255,255,0.8)"
+  );
+
+
+  sun.addColorStop(
+    1,
+    "rgba(255,255,255,0)"
+  );
+
+
+  ctx.fillStyle =
+    sun;
+
+
+  ctx.fillRect(
+    760,
+    0,
+    240,
+    190
+  );
+
+
+  // 遠景
+
+  ctx.fillStyle =
+    "rgba(100,150,165,0.14)";
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    WATER_Y
+  );
+
+
+  ctx.lineTo(
+    0,
+    WATER_Y - 25
+  );
+
+
+  ctx.quadraticCurveTo(
+    220,
+    WATER_Y - 80,
+    420,
+    WATER_Y - 28
+  );
+
+
+  ctx.quadraticCurveTo(
+    650,
+    WATER_Y - 65,
+    850,
+    WATER_Y - 20
+  );
+
+
+  ctx.lineTo(
+    canvas.width,
+    WATER_Y
+  );
+
+
+  ctx.closePath();
+
+  ctx.fill();
 
 
   // 水
 
+  const water =
+    ctx.createLinearGradient(
+      0,
+      WATER_Y,
+      0,
+      canvas.height
+    );
+
+
+  water.addColorStop(
+    0,
+    "#8cd0e8"
+  );
+
+  water.addColorStop(
+    1,
+    "#4195b9"
+  );
+
+
   ctx.fillStyle =
-    "#d8eef8";
+    water;
+
 
   ctx.fillRect(
     0,
-    waterY,
+    WATER_Y,
     canvas.width,
-    canvas.height - waterY
+    canvas.height -
+    WATER_Y
   );
 
 
   // 水面
 
   ctx.strokeStyle =
-    "#5fa8d3";
+    "rgba(255,255,255,0.78)";
 
   ctx.lineWidth =
-    3;
+    2;
+
 
   ctx.beginPath();
 
   ctx.moveTo(
     0,
-    waterY
+    WATER_Y
   );
 
   ctx.lineTo(
     canvas.width,
-    waterY
+    WATER_Y
   );
 
   ctx.stroke();
 
 
-  // =====================
-  // 距離目盛り
-  // =====================
-
-  ctx.font =
-    "13px sans-serif";
-
-  ctx.fillStyle =
-    "#50809a";
+  // 波
 
   ctx.strokeStyle =
-    "#8ec4dd";
+    "rgba(255,255,255,0.20)";
 
   ctx.lineWidth =
     1;
 
 
-  const firstMeter =
+  for (
+    let row = 0;
+    row < 4;
+    row++
+  ) {
+
+    const y =
+      WATER_Y +
+      25 +
+      row * 28;
+
+
+    ctx.beginPath();
+
+
+    for (
+      let x = 0;
+      x <= canvas.width;
+      x += 25
+    ) {
+
+      const waveY =
+        y +
+        Math.sin(
+          (
+            x +
+            cameraX *
+            0.15
+          ) *
+          0.03
+        ) *
+        2;
+
+
+      if (
+        x === 0
+      ) {
+
+        ctx.moveTo(
+          x,
+          waveY
+        );
+
+      } else {
+
+        ctx.lineTo(
+          x,
+          waveY
+        );
+      }
+    }
+
+
+    ctx.stroke();
+  }
+
+
+  // 距離目盛り
+
+  ctx.font =
+    "12px sans-serif";
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.72)";
+
+
+  const startMeters =
     Math.floor(
       cameraX /
       PIXELS_PER_METER /
       10
-    ) * 10;
+    ) *
+    10;
 
 
   for (
-    let meters = firstMeter;
-    meters < firstMeter + 100;
+    let meters =
+      startMeters;
+
+    meters <
+      startMeters +
+      100;
+
     meters += 10
   ) {
 
@@ -166,66 +451,62 @@ function drawBackground(
 
     if (
       screenX < 0 ||
-      screenX > canvas.width
+      screenX >
+      canvas.width
     ) {
 
       continue;
     }
 
 
-    ctx.beginPath();
-
-    ctx.moveTo(
+    ctx.fillRect(
       screenX,
-      waterY
+      WATER_Y,
+      1,
+      10
     );
-
-    ctx.lineTo(
-      screenX,
-      waterY + 12
-    );
-
-    ctx.stroke();
 
 
     ctx.fillText(
       `${meters}m`,
-      screenX + 4,
-      waterY + 28
+      screenX + 5,
+      WATER_Y + 25
     );
   }
 }
 
 
 // =========================
-// 文字描画
+// 文字
 // =========================
 
 function drawCharacter(
   character,
   x,
   y,
-  angle
+  rotation = 0
 ) {
 
   ctx.save();
+
 
   ctx.translate(
     x,
     y
   );
 
+
   ctx.rotate(
-    angle
+    rotation
   );
 
 
   ctx.fillStyle =
-    "#222";
+    "#0f172a";
 
 
   ctx.font =
-    "70px sans-serif";
+    '700 72px "Noto Sans JP", sans-serif';
 
 
   ctx.textAlign =
@@ -234,6 +515,18 @@ function drawCharacter(
 
   ctx.textBaseline =
     "middle";
+
+
+  ctx.shadowColor =
+    "rgba(15,23,42,0.16)";
+
+
+  ctx.shadowBlur =
+    8;
+
+
+  ctx.shadowOffsetY =
+    5;
 
 
   ctx.fillText(
@@ -251,53 +544,151 @@ function drawCharacter(
 // 水しぶき
 // =========================
 
-function drawSplash(
-  x
+function spawnSplash(
+  worldX,
+  intensity = 1
 ) {
 
-  ctx.strokeStyle =
-    "#ffffff";
-
-  ctx.lineWidth =
-    2;
+  const count =
+    Math.round(
+      15 +
+      intensity *
+      13
+    );
 
 
   for (
     let i = 0;
-    i < 5;
+    i < count;
     i++
   ) {
 
-    const offset =
-      (i - 2) * 7;
+    const life =
+      25 +
+      Math.random() *
+      18;
+
+
+    particles.push({
+
+      worldX:
+        worldX,
+
+      y:
+        WATER_Y,
+
+      vx:
+        (
+          Math.random() -
+          0.5
+        ) *
+        4 *
+        intensity,
+
+      vy:
+        -(
+          1.2 +
+          Math.random() *
+          4.6 *
+          intensity
+        ),
+
+      size:
+        1.5 +
+        Math.random() *
+        3,
+
+      life,
+
+      maxLife:
+        life
+    });
+  }
+}
+
+
+function updateAndDrawParticles(
+  cameraX
+) {
+
+  const next =
+    [];
+
+
+  for (
+    const particle
+    of particles
+  ) {
+
+    particle.worldX +=
+      particle.vx;
+
+
+    particle.y +=
+      particle.vy;
+
+
+    particle.vy +=
+      0.17;
+
+
+    particle.life--;
+
+
+    if (
+      particle.life <= 0
+    ) {
+
+      continue;
+    }
+
+
+    const screenX =
+      START_X +
+      particle.worldX -
+      cameraX;
+
+
+    const alpha =
+      particle.life /
+      particle.maxLife;
+
+
+    ctx.fillStyle =
+      `rgba(255,255,255,${
+        alpha *
+        0.9
+      })`;
 
 
     ctx.beginPath();
 
 
-    ctx.moveTo(
-      x,
-      waterY
+    ctx.arc(
+      screenX,
+      particle.y,
+      particle.size,
+      0,
+      Math.PI * 2
     );
 
 
-    ctx.lineTo(
-      x + offset,
-      waterY -
-      10 -
-      Math.abs(
-        offset
-      )
+    ctx.fill();
+
+
+    next.push(
+      particle
     );
-
-
-    ctx.stroke();
   }
+
+
+  particles =
+    next;
 }
 
 
 // =========================
-// 文字解析
+// 文字形状解析
 // =========================
 
 function analyzeCharacter(
@@ -373,7 +764,8 @@ function analyzeCharacter(
 
   const mask =
     new Uint8Array(
-      size * size
+      size *
+      size
     );
 
 
@@ -388,7 +780,6 @@ function analyzeCharacter(
 
   let maxY =
     -1;
-
 
   let pixels =
     0;
@@ -411,21 +802,26 @@ function analyzeCharacter(
 
       const index =
         (
-          y * size +
+          y *
+          size +
           x
-        ) * 4;
+        ) *
+        4;
 
 
       if (
         data[
           index + 3
-        ] > 40
+        ] >
+        40
       ) {
 
         mask[
-          y * size +
+          y *
+          size +
           x
-        ] = 1;
+        ] =
+          1;
 
 
         pixels++;
@@ -509,9 +905,7 @@ function analyzeCharacter(
     );
 
 
-  // =====================
   // 重心
-  // =====================
 
   const centerX =
     (
@@ -521,7 +915,8 @@ function analyzeCharacter(
     ) /
     Math.max(
       1,
-      width - 1
+      width -
+      1
     );
 
 
@@ -532,13 +927,12 @@ function analyzeCharacter(
       Math.abs(
         centerX -
         0.5
-      ) * 2
+      ) *
+      2
     );
 
 
-  // =====================
-  // 左右対称性
-  // =====================
+  // 左右対称
 
   let comparisons =
     0;
@@ -557,14 +951,16 @@ function analyzeCharacter(
       let offset = 0;
       offset <
       Math.floor(
-        width / 2
+        width /
+        2
       );
       offset++
     ) {
 
       const left =
         mask[
-          y * size +
+          y *
+          size +
           minX +
           offset
         ];
@@ -572,7 +968,8 @@ function analyzeCharacter(
 
       const right =
         mask[
-          y * size +
+          y *
+          size +
           maxX -
           offset
         ];
@@ -605,9 +1002,7 @@ function analyzeCharacter(
       : 1;
 
 
-  // =====================
   // 接水幅
-  // =====================
 
   const bottomStart =
     Math.floor(
@@ -632,14 +1027,17 @@ function analyzeCharacter(
 
 
     for (
-      let y = bottomStart;
+      let y =
+        bottomStart;
+
       y <= maxY;
       y++
     ) {
 
       if (
         mask[
-          y * size +
+          y *
+          size +
           x
         ]
       ) {
@@ -661,11 +1059,6 @@ function analyzeCharacter(
   }
 
 
-  const contact =
-    contactColumns /
-    width;
-
-
   return {
 
     aspect,
@@ -676,13 +1069,15 @@ function analyzeCharacter(
 
     balance,
 
-    contact
+    contact:
+      contactColumns /
+      width
   };
 }
 
 
 // =========================
-// 文字性能
+// 性能
 // =========================
 
 function calculateStats(
@@ -748,86 +1143,49 @@ function calculateStats(
     );
 
 
-  const targetSkips =
-    1 +
-    Math.round(
-      score *
-      16
-    );
-
-
-  const speed =
-    8 +
-    score *
-    2.4;
-
-
-  const bounce =
-    2.7 -
-    score *
-    1.0;
-
-
-  const retention =
-    0.83 +
-    score *
-    0.14;
-
-
   return {
 
-    aspect:
-      shape.aspect,
+    ...shape,
 
-    density:
-      shape.density,
+    score,
 
-    symmetry:
-      shape.symmetry,
+    targetSkips:
+      1 +
+      Math.round(
+        score *
+        16
+      ),
 
-    balance:
-      shape.balance,
+    speed:
+      8 +
+      score *
+      2.5,
 
-    contact:
-      shape.contact,
+    bounce:
+      2.8 -
+      score *
+      1.05,
 
-    skipPower:
-      score,
-
-    targetSkips,
-
-    speed,
-
-    bounce,
-
-    retention
+    retention:
+      0.83 +
+      score *
+      0.14
   };
 }
 
 
 // =========================
-// 投げる角度の性能
+// 投射角
 // =========================
 
 function calculateAngleFactor(
-  angleDegrees
+  angle
 ) {
-
-  /*
-    8度付近を理想角度とする。
-
-    角度が悪くても
-    完全に0にはしない。
-  */
-
-  const idealAngle =
-    8;
-
 
   const difference =
     Math.abs(
-      angleDegrees -
-      idealAngle
+      angle -
+      8
     );
 
 
@@ -835,19 +1193,21 @@ function calculateAngleFactor(
     1 -
     difference /
     22,
-    0.35,
+    0.30,
     1
   );
 }
 
 
 // =========================
-// 初期画面
+// 照準描画
 // =========================
 
-function drawInitialScene(
-  character = "水"
-) {
+function drawAim() {
+
+  const character =
+    getCharacter();
+
 
   drawBackground(
     0
@@ -857,90 +1217,450 @@ function drawInitialScene(
   drawCharacter(
     character,
     START_X,
-    waterY - 55,
+    START_Y,
     0
+  );
+
+
+  // ドラッグライン
+
+  if (
+    aiming &&
+    aimPointer
+  ) {
+
+    ctx.strokeStyle =
+      "rgba(15,23,42,0.25)";
+
+
+    ctx.lineWidth =
+      3;
+
+
+    ctx.setLineDash(
+      [
+        7,
+        7
+      ]
+    );
+
+
+    ctx.beginPath();
+
+
+    ctx.moveTo(
+      START_X,
+      START_Y
+    );
+
+
+    ctx.lineTo(
+      aimPointer.x,
+      aimPointer.y
+    );
+
+
+    ctx.stroke();
+
+
+    ctx.setLineDash(
+      []
+    );
+  }
+
+
+  // 発射方向
+
+  const radians =
+    aimAngle *
+    Math.PI /
+    180;
+
+
+  const length =
+    85 +
+    aimPower *
+    105;
+
+
+  const endX =
+    START_X +
+    Math.cos(
+      radians
+    ) *
+    length;
+
+
+  const endY =
+    START_Y -
+    Math.sin(
+      radians
+    ) *
+    length;
+
+
+  const gradient =
+    ctx.createLinearGradient(
+      START_X,
+      START_Y,
+      endX,
+      endY
+    );
+
+
+  gradient.addColorStop(
+    0,
+    "rgba(14,165,233,0.25)"
+  );
+
+
+  gradient.addColorStop(
+    1,
+    "rgba(2,132,199,1)"
+  );
+
+
+  ctx.strokeStyle =
+    gradient;
+
+
+  ctx.lineWidth =
+    6;
+
+
+  ctx.lineCap =
+    "round";
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    START_X + 30,
+    START_Y
+  );
+
+
+  ctx.lineTo(
+    endX,
+    endY
+  );
+
+
+  ctx.stroke();
+
+
+  // 矢印
+
+  const arrow =
+    13;
+
+
+  ctx.fillStyle =
+    "#0284c7";
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    endX,
+    endY
+  );
+
+
+  ctx.lineTo(
+    endX -
+    Math.cos(
+      radians -
+      0.5
+    ) *
+    arrow,
+    endY +
+    Math.sin(
+      radians -
+      0.5
+    ) *
+    arrow
+  );
+
+
+  ctx.lineTo(
+    endX -
+    Math.cos(
+      radians +
+      0.5
+    ) *
+    arrow,
+    endY +
+    Math.sin(
+      radians +
+      0.5
+    ) *
+    arrow
+  );
+
+
+  ctx.closePath();
+
+
+  ctx.fill();
+}
+
+
+// =========================
+// 照準操作
+// =========================
+
+canvas.addEventListener(
+  "pointerdown",
+  event => {
+
+    if (
+      animationId !== null
+    ) {
+
+      return;
+    }
+
+
+    const pos =
+      getPointerPosition(
+        event
+      );
+
+
+    const distance =
+      Math.hypot(
+        pos.x -
+        START_X,
+        pos.y -
+        START_Y
+      );
+
+
+    if (
+      distance >
+      105
+    ) {
+
+      return;
+    }
+
+
+    aiming =
+      true;
+
+
+    pointerId =
+      event.pointerId;
+
+
+    canvas.setPointerCapture(
+      pointerId
+    );
+
+
+    aimPointer =
+      pos;
+
+
+    canvasHint.classList.add(
+      "hidden"
+    );
+
+
+    updateAim(
+      pos
+    );
+  }
+);
+
+
+canvas.addEventListener(
+  "pointermove",
+  event => {
+
+    if (
+      !aiming ||
+      event.pointerId !==
+      pointerId
+    ) {
+
+      return;
+    }
+
+
+    const pos =
+      getPointerPosition(
+        event
+      );
+
+
+    aimPointer =
+      pos;
+
+
+    updateAim(
+      pos
+    );
+  }
+);
+
+
+function updateAim(
+  pos
+) {
+
+  const dragX =
+    pos.x -
+    START_X;
+
+
+  const dragY =
+    pos.y -
+    START_Y;
+
+
+  dragDistance =
+    Math.hypot(
+      dragX,
+      dragY
+    );
+
+
+  const launchX =
+    -dragX;
+
+
+  const launchY =
+    -dragY;
+
+
+  if (
+    launchX >
+    1
+  ) {
+
+    const rawAngle =
+      Math.atan2(
+        -launchY,
+        launchX
+      ) *
+      180 /
+      Math.PI;
+
+
+    aimAngle =
+      clamp(
+        rawAngle,
+        -5,
+        25
+      );
+  }
+
+
+  aimPower =
+    clamp(
+      dragDistance /
+      165,
+      0.25,
+      1
+    );
+
+
+  angleValue.textContent =
+    `${aimAngle.toFixed(1)}°`;
+
+
+  powerValue.textContent =
+    `${Math.round(
+      aimPower *
+      100
+    )}%`;
+
+
+  drawAim();
+}
+
+
+function releaseAim(
+  event
+) {
+
+  if (
+    !aiming ||
+    event.pointerId !==
+    pointerId
+  ) {
+
+    return;
+  }
+
+
+  aiming =
+    false;
+
+
+  try {
+
+    canvas.releasePointerCapture(
+      pointerId
+    );
+
+  } catch {}
+
+
+  pointerId =
+    null;
+
+
+  if (
+    dragDistance <
+    28
+  ) {
+
+    drawAim();
+
+    result.textContent =
+      "もう少し大きく引っぱってください";
+
+    return;
+  }
+
+
+  throwCharacter(
+    getCharacter(),
+    aimAngle,
+    aimPower
   );
 }
 
 
-// =========================
-// ゲーム終了
-// =========================
-
-function finishThrow(
-  character,
-  skips,
-  distance,
-  angle,
-  stats
-) {
-
-  const finalDistance =
-    Number(
-      distance.toFixed(
-        1
-      )
-    );
+canvas.addEventListener(
+  "pointerup",
+  releaseAim
+);
 
 
-  distanceValue.textContent =
-    `${finalDistance.toFixed(1)} m`;
-
-
-  result.innerHTML =
-    `
-    <strong>「${character}」</strong>
-    <br>
-    水切り ${skips}回
-    <br>
-    飛距離 ${finalDistance.toFixed(1)}m
-    <br>
-    投射角 ${angle}°
-    `;
-
-
-  lastResult = {
-
-    character,
-
-    skips,
-
-    distance:
-      finalDistance,
-
-    angle,
-
-    score:
-      stats.skipPower
-  };
-
-
-  shareButton.hidden =
-    false;
-
-
-  animationId =
-    null;
-}
+canvas.addEventListener(
+  "pointercancel",
+  releaseAim
+);
 
 
 // =========================
-// 投げる
+// 投射
 // =========================
 
 function throwCharacter(
   character,
-  launchAngle
+  launchAngle,
+  launchPower
 ) {
 
-  if (
-    animationId !== null
-  ) {
-
-    cancelAnimationFrame(
-      animationId
-    );
-  }
+  particles =
+    [];
 
 
   shareButton.hidden =
@@ -959,16 +1679,23 @@ function throwCharacter(
     );
 
 
-  /*
-    文字性能 × 投げる角度
-  */
+  const powerFactor =
+    0.68 +
+    launchPower *
+    0.45;
+
 
   const effectiveSkips =
     Math.max(
       1,
       Math.round(
         stats.targetSkips *
-        angleFactor
+        angleFactor *
+        (
+          0.76 +
+          launchPower *
+          0.24
+        )
       )
     );
 
@@ -984,12 +1711,12 @@ function throwCharacter(
 
 
   let y =
-    waterY -
-    55;
+    START_Y;
 
 
   let vx =
     stats.speed *
+    powerFactor *
     Math.cos(
       radians
     );
@@ -997,17 +1724,23 @@ function throwCharacter(
 
   let vy =
     -stats.speed *
+    powerFactor *
     Math.sin(
       radians
     );
 
 
-  let angle =
+  let rotation =
     -radians;
 
 
-  let rotationSpeed =
-    0.04;
+  let spin =
+    0.035 +
+    (
+      1 -
+      stats.symmetry
+    ) *
+    0.05;
 
 
   let skips =
@@ -1020,14 +1753,6 @@ function throwCharacter(
 
   const gravity =
     0.22;
-
-
-  let splashWorldX =
-    null;
-
-
-  let splashFrames =
-    0;
 
 
   function animate() {
@@ -1044,23 +1769,19 @@ function throwCharacter(
       gravity;
 
 
-    angle +=
-      rotationSpeed;
+    rotation +=
+      spin;
 
-
-    /*
-      カメラを追従させる
-    */
 
     const cameraX =
       Math.max(
         0,
         worldX -
-        650
+        690
       );
 
 
-    const screenX =
+    let screenX =
       START_X +
       worldX -
       cameraX;
@@ -1071,30 +1792,35 @@ function throwCharacter(
     );
 
 
-    // =====================
-    // 水面接触
-    // =====================
+    // 水面衝突
 
     if (
       y >=
-      waterY - 18 &&
-      vy > 0
+      WATER_Y -
+      18 &&
+      vy >
+      0
     ) {
 
       skips++;
 
 
-      splashWorldX =
-        worldX;
+      skipsValue.textContent =
+        skips;
 
 
-      splashFrames =
-        5;
+      spawnSplash(
+        worldX,
+        clamp(
+          Math.abs(
+            vy
+          ) /
+          3,
+          0.7,
+          1.5
+        )
+      );
 
-
-      /*
-        指定回数に達したら沈む
-      */
 
       if (
         skips >=
@@ -1106,11 +1832,16 @@ function throwCharacter(
           PIXELS_PER_METER;
 
 
+        updateAndDrawParticles(
+          cameraX
+        );
+
+
         drawCharacter(
           character,
           screenX,
-          waterY + 12,
-          angle
+          WATER_Y + 11,
+          rotation
         );
 
 
@@ -1119,7 +1850,7 @@ function throwCharacter(
           skips,
           distance,
           launchAngle,
-          stats
+          launchPower
         );
 
 
@@ -1132,52 +1863,39 @@ function throwCharacter(
 
 
       currentBounce *=
-        0.96;
+        0.955;
 
 
       vx *=
         stats.retention;
 
 
-      rotationSpeed *=
-        0.96;
+      spin *=
+        0.97;
 
 
       y =
-        waterY -
+        WATER_Y -
         19;
     }
 
 
-    // =====================
-    // 水しぶき
-    // =====================
-
-    if (
-      splashFrames >
-      0
-    ) {
-
-      const splashScreenX =
-        START_X +
-        splashWorldX -
-        cameraX;
+    updateAndDrawParticles(
+      cameraX
+    );
 
 
-      drawSplash(
-        splashScreenX
-      );
-
-
-      splashFrames--;
-    }
+    screenX =
+      START_X +
+      worldX -
+      cameraX;
 
 
     drawCharacter(
       character,
       screenX,
       y,
-      angle
+      rotation
     );
 
 
@@ -1187,22 +1905,23 @@ function throwCharacter(
 
 
     distanceValue.textContent =
-      `${distance.toFixed(1)} m`;
+      `${distance.toFixed(
+        1
+      )}m`;
 
 
     result.textContent =
       `水切り ${skips}回`;
 
 
-    /*
-      安全用終了条件
-    */
-
     if (
       distance >
-      300 ||
+      350 ||
       vx <
-      0.5
+      0.45 ||
+      y >
+      canvas.height +
+      60
     ) {
 
       finishThrow(
@@ -1210,7 +1929,7 @@ function throwCharacter(
         skips,
         distance,
         launchAngle,
-        stats
+        launchPower
       );
 
 
@@ -1225,65 +1944,111 @@ function throwCharacter(
   }
 
 
-  animate();
+  animationId =
+    requestAnimationFrame(
+      animate
+    );
 }
 
 
 // =========================
-// 角度スライダー
+// 終了
 // =========================
 
-angleInput.addEventListener(
-  "input",
-  () => {
+function finishThrow(
+  character,
+  skips,
+  distance,
+  angle,
+  power
+) {
 
-    angleValue.textContent =
-      `${angleInput.value}°`;
-  }
-);
+  if (
+    animationId !==
+    null
+  ) {
 
-
-// =========================
-// 投げるボタン
-// =========================
-
-throwButton.addEventListener(
-  "click",
-  () => {
-
-    const character =
-      Array.from(
-        input.value.trim()
-      )[0];
-
-
-    if (
-      !character
-    ) {
-
-      result.textContent =
-        "文字を入力してください";
-
-      return;
-    }
-
-
-    const angle =
-      Number(
-        angleInput.value
-      );
-
-
-    distanceValue.textContent =
-      "0.0 m";
-
-
-    throwCharacter(
-      character,
-      angle
+    cancelAnimationFrame(
+      animationId
     );
   }
-);
+
+
+  animationId =
+    null;
+
+
+  const finalDistance =
+    Number(
+      distance.toFixed(
+        1
+      )
+    );
+
+
+  distanceValue.textContent =
+    `${finalDistance.toFixed(
+      1
+    )}m`;
+
+
+  skipsValue.textContent =
+    skips;
+
+
+  result.innerHTML =
+    `
+      <strong>
+        「${character}」
+        ${finalDistance.toFixed(1)}m
+      </strong>
+      <br>
+      水切り ${skips}回
+      ・
+      投射角 ${angle.toFixed(1)}°
+      ・
+      POWER ${Math.round(
+        power *
+        100
+      )}%
+    `;
+
+
+  lastResult = {
+
+    character,
+
+    skips,
+
+    distance:
+      finalDistance,
+
+    angle:
+      Number(
+        angle.toFixed(
+          1
+        )
+      ),
+
+    power:
+      Math.round(
+        power *
+        100
+      )
+  };
+
+
+  shareButton.hidden =
+    false;
+
+
+  canvasHint.classList.remove(
+    "hidden"
+  );
+
+
+  drawAim();
+}
 
 
 // =========================
@@ -1303,20 +2068,21 @@ shareButton.addEventListener(
 
 
     const text =
-      `文字水切りで「${lastResult.character}」を投げました！
+`文字水切りで「${lastResult.character}」を投げました。
 
-🌊 水切り：${lastResult.skips}回
-📏 飛距離：${lastResult.distance.toFixed(1)}m
-🎯 投射角：${lastResult.angle}°
+🌊 水切り ${lastResult.skips}回
+📏 ${lastResult.distance.toFixed(1)}m
+🎯 ${lastResult.angle}°
+⚡ POWER ${lastResult.power}%
 
-あなたも最強の文字を探してみよう。
+最強の文字を探せ。
 
 #文字水切り
 
 ${window.location.href}`;
 
 
-    const shareUrl =
+    const url =
       "https://x.com/intent/post?text=" +
       encodeURIComponent(
         text
@@ -1324,10 +2090,48 @@ ${window.location.href}`;
 
 
     window.open(
-      shareUrl,
+      url,
       "_blank",
       "noopener,noreferrer"
     );
+  }
+);
+
+
+// =========================
+// 入力変更
+// =========================
+
+input.addEventListener(
+  "input",
+  () => {
+
+    if (
+      animationId !==
+      null
+    ) {
+
+      return;
+    }
+
+
+    shareButton.hidden =
+      true;
+
+
+    distanceValue.textContent =
+      "0.0m";
+
+
+    skipsValue.textContent =
+      "0";
+
+
+    result.textContent =
+      "文字を引っぱって投げてください";
+
+
+    drawAim();
   }
 );
 
@@ -1352,7 +2156,7 @@ function (
   ]
 ) {
 
-  const results =
+  const values =
     characters.map(
       character => {
 
@@ -1397,12 +2201,12 @@ function (
 
           総合適性:
             Number(
-              stats.skipPower.toFixed(
+              stats.score.toFixed(
                 2
               )
             ),
 
-          予測回数:
+          最大水切り:
             stats.targetSkips
         };
       }
@@ -1410,11 +2214,11 @@ function (
 
 
   console.table(
-    results
+    values
   );
 
 
-  return results;
+  return values;
 };
 
 
@@ -1422,6 +2226,15 @@ function (
 // 初期化
 // =========================
 
-drawInitialScene(
-  "水"
-);
+angleValue.textContent =
+  `${aimAngle.toFixed(1)}°`;
+
+
+powerValue.textContent =
+  `${Math.round(
+    aimPower *
+    100
+  )}%`;
+
+
+drawAim();
