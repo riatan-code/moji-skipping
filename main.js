@@ -678,10 +678,6 @@ drawInitialScene(
   "水"
 );
 
-// =========================
-// 自動テスト
-// =========================
-
 window.testCharacters = function (
   characters = [
     "一",
@@ -702,44 +698,30 @@ window.testCharacters = function (
       character => {
 
         const stats =
-          calculateStats(
-            character
-          );
+          calculateStats(character);
 
         return {
           文字: character,
 
           横長度:
-            Number(
-              stats.aspect.toFixed(2)
-            ),
+            Number(stats.aspect.toFixed(2)),
 
           密度:
-            Number(
-              stats.density.toFixed(2)
-            ),
+            Number(stats.density.toFixed(2)),
 
           水切り適性:
-            Number(
-              stats.skipPower.toFixed(2)
-            ),
+            Number(stats.skipPower.toFixed(2)),
 
           予測水切り回数:
             stats.targetSkips,
 
           初速:
-            Number(
-              stats.speed.toFixed(2)
-            )
+            Number(stats.speed.toFixed(2))
         };
       }
     );
 
-
-  console.table(
-    results
-  );
-
+  console.table(results);
 
   return results;
 };
