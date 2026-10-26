@@ -677,3 +677,69 @@ throwButton.addEventListener(
 drawInitialScene(
   "水"
 );
+
+// =========================
+// 自動テスト
+// =========================
+
+window.testCharacters = function (
+  characters = [
+    "一",
+    "水",
+    "Ⅰ",
+    "鬱",
+    "〇",
+    "山",
+    "川",
+    "凹",
+    "卍",
+    "㍿"
+  ]
+) {
+
+  const results =
+    characters.map(
+      character => {
+
+        const stats =
+          calculateStats(
+            character
+          );
+
+        return {
+          文字: character,
+
+          横長度:
+            Number(
+              stats.aspect.toFixed(2)
+            ),
+
+          密度:
+            Number(
+              stats.density.toFixed(2)
+            ),
+
+          水切り適性:
+            Number(
+              stats.skipPower.toFixed(2)
+            ),
+
+          予測水切り回数:
+            stats.targetSkips,
+
+          初速:
+            Number(
+              stats.speed.toFixed(2)
+            )
+        };
+      }
+    );
+
+
+  console.table(
+    results
+  );
+
+
+  return results;
+};
