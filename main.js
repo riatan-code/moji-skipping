@@ -49,12 +49,14 @@ const canvasHint =
   );
 
 
-const WATER_Y = 320;
+const WATER_Y =
+  355;
 
-const START_X = 130;
+const START_X =
+  110;
 
 const START_Y =
-  WATER_Y - 48;
+  WATER_Y - 55;
 
 const PIXELS_PER_METER =
   17;
@@ -62,6 +64,10 @@ const PIXELS_PER_METER =
 
 let animationId =
   null;
+
+let gameState =
+  "ready";
+
 
 let aiming =
   false;
@@ -80,6 +86,7 @@ let aimPower =
 
 let dragDistance =
   0;
+
 
 let lastResult =
   null;
@@ -110,9 +117,12 @@ function clamp(
 
 function getCharacter() {
 
-  return Array.from(
-    input.value.trim()
-  )[0] || "水";
+  return (
+    Array.from(
+      input.value.trim()
+    )[0] ||
+    "水"
+  );
 }
 
 
@@ -146,6 +156,92 @@ function getPointerPosition(
 
 
 // =========================
+// リセット
+// =========================
+
+function resetGame() {
+
+  if (
+    animationId !==
+    null
+  ) {
+
+    cancelAnimationFrame(
+      animationId
+    );
+
+    animationId =
+      null;
+  }
+
+
+  gameState =
+    "ready";
+
+
+  aiming =
+    false;
+
+  pointerId =
+    null;
+
+  aimPointer =
+    null;
+
+  dragDistance =
+    0;
+
+
+  particles =
+    [];
+
+  lastResult =
+    null;
+
+
+  distanceValue.textContent =
+    "0.0m";
+
+
+  skipsValue.textContent =
+    "0";
+
+
+  angleValue.textContent =
+    `${aimAngle.toFixed(
+      1
+    )}°`;
+
+
+  powerValue.textContent =
+    `${Math.round(
+      aimPower *
+      100
+    )}%`;
+
+
+  result.textContent =
+    "文字を引っぱって投げてください";
+
+
+  shareButton.hidden =
+    true;
+
+
+  canvasHint.textContent =
+    "文字をつかんで引っぱる";
+
+
+  canvasHint.classList.remove(
+    "hidden"
+  );
+
+
+  drawAim();
+}
+
+
+// =========================
 // 背景
 // =========================
 
@@ -174,13 +270,15 @@ function drawBackground(
 
   sky.addColorStop(
     0,
-    "#edfaff"
+    "#eefaff"
   );
+
 
   sky.addColorStop(
     0.62,
     "#dff4fc"
   );
+
 
   sky.addColorStop(
     1,
@@ -204,18 +302,18 @@ function drawBackground(
 
   const sun =
     ctx.createRadialGradient(
-      880,
-      80,
+      735,
+      78,
       2,
-      880,
-      80,
-      100
+      735,
+      78,
+      105
     );
 
 
   sun.addColorStop(
     0,
-    "rgba(255,255,255,0.8)"
+    "rgba(255,255,255,0.88)"
   );
 
 
@@ -230,10 +328,10 @@ function drawBackground(
 
 
   ctx.fillRect(
-    760,
+    610,
     0,
-    240,
-    190
+    250,
+    195
   );
 
 
@@ -245,6 +343,7 @@ function drawBackground(
 
   ctx.beginPath();
 
+
   ctx.moveTo(
     0,
     WATER_Y
@@ -253,23 +352,31 @@ function drawBackground(
 
   ctx.lineTo(
     0,
-    WATER_Y - 25
+    WATER_Y - 26
   );
 
 
   ctx.quadraticCurveTo(
-    220,
-    WATER_Y - 80,
-    420,
-    WATER_Y - 28
+    180,
+    WATER_Y - 78,
+    365,
+    WATER_Y - 30
   );
 
 
   ctx.quadraticCurveTo(
-    650,
-    WATER_Y - 65,
-    850,
-    WATER_Y - 20
+    565,
+    WATER_Y - 70,
+    730,
+    WATER_Y - 24
+  );
+
+
+  ctx.quadraticCurveTo(
+    815,
+    WATER_Y - 45,
+    canvas.width,
+    WATER_Y - 18
   );
 
 
@@ -300,9 +407,10 @@ function drawBackground(
     "#8cd0e8"
   );
 
+
   water.addColorStop(
     1,
-    "#4195b9"
+    "#347f9f"
   );
 
 
@@ -322,7 +430,7 @@ function drawBackground(
   // 水面
 
   ctx.strokeStyle =
-    "rgba(255,255,255,0.78)";
+    "rgba(255,255,255,0.8)";
 
   ctx.lineWidth =
     2;
@@ -330,15 +438,18 @@ function drawBackground(
 
   ctx.beginPath();
 
+
   ctx.moveTo(
     0,
     WATER_Y
   );
 
+
   ctx.lineTo(
     canvas.width,
     WATER_Y
   );
+
 
   ctx.stroke();
 
@@ -346,7 +457,7 @@ function drawBackground(
   // 波
 
   ctx.strokeStyle =
-    "rgba(255,255,255,0.20)";
+    "rgba(255,255,255,0.19)";
 
   ctx.lineWidth =
     1;
@@ -361,7 +472,8 @@ function drawBackground(
     const y =
       WATER_Y +
       25 +
-      row * 28;
+      row *
+      30;
 
 
     ctx.beginPath();
@@ -370,7 +482,7 @@ function drawBackground(
     for (
       let x = 0;
       x <= canvas.width;
-      x += 25
+      x += 24
     ) {
 
       const waveY =
@@ -412,10 +524,11 @@ function drawBackground(
   // 距離目盛り
 
   ctx.font =
-    "12px sans-serif";
+    '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.72)";
+    "rgba(255,255,255,0.78)";
 
 
   const startMeters =
@@ -477,14 +590,16 @@ function drawBackground(
 
 
 // =========================
-// 文字
+// 文字描画
 // =========================
 
 function drawCharacter(
   character,
   x,
   y,
-  rotation = 0
+  rotation = 0,
+  alpha = 1,
+  color = "#0f172a"
 ) {
 
   ctx.save();
@@ -501,8 +616,12 @@ function drawCharacter(
   );
 
 
+  ctx.globalAlpha =
+    alpha;
+
+
   ctx.fillStyle =
-    "#0f172a";
+    color;
 
 
   ctx.font =
@@ -551,9 +670,9 @@ function spawnSplash(
 
   const count =
     Math.round(
-      15 +
+      18 +
       intensity *
-      13
+      15
     );
 
 
@@ -564,15 +683,14 @@ function spawnSplash(
   ) {
 
     const life =
-      25 +
+      26 +
       Math.random() *
       18;
 
 
     particles.push({
 
-      worldX:
-        worldX,
+      worldX,
 
       y:
         WATER_Y,
@@ -582,21 +700,21 @@ function spawnSplash(
           Math.random() -
           0.5
         ) *
-        4 *
+        4.5 *
         intensity,
 
       vy:
         -(
-          1.2 +
+          1.4 +
           Math.random() *
-          4.6 *
+          4.8 *
           intensity
         ),
 
       size:
         1.5 +
         Math.random() *
-        3,
+        3.3,
 
       life,
 
@@ -657,7 +775,7 @@ function updateAndDrawParticles(
     ctx.fillStyle =
       `rgba(255,255,255,${
         alpha *
-        0.9
+        0.92
       })`;
 
 
@@ -669,7 +787,8 @@ function updateAndDrawParticles(
       particle.y,
       particle.size,
       0,
-      Math.PI * 2
+      Math.PI *
+      2
     );
 
 
@@ -688,7 +807,7 @@ function updateAndDrawParticles(
 
 
 // =========================
-// 文字形状解析
+// 文字解析
 // =========================
 
 function analyzeCharacter(
@@ -781,6 +900,7 @@ function analyzeCharacter(
   let maxY =
     -1;
 
+
   let pixels =
     0;
 
@@ -825,6 +945,7 @@ function analyzeCharacter(
 
 
         pixels++;
+
 
         sumX +=
           x;
@@ -984,7 +1105,8 @@ function analyzeCharacter(
 
 
         if (
-          left !== right
+          left !==
+          right
         ) {
 
           mismatches++;
@@ -1008,7 +1130,7 @@ function analyzeCharacter(
     Math.floor(
       minY +
       height *
-      0.70
+      0.7
     );
 
 
@@ -1077,7 +1199,7 @@ function analyzeCharacter(
 
 
 // =========================
-// 性能
+// 文字性能
 // =========================
 
 function calculateStats(
@@ -1175,7 +1297,7 @@ function calculateStats(
 
 
 // =========================
-// 投射角
+// 角度評価
 // =========================
 
 function calculateAngleFactor(
@@ -1193,14 +1315,14 @@ function calculateAngleFactor(
     1 -
     difference /
     22,
-    0.30,
+    0.3,
     1
   );
 }
 
 
 // =========================
-// 照準描画
+// 照準
 // =========================
 
 function drawAim() {
@@ -1221,8 +1343,6 @@ function drawAim() {
     0
   );
 
-
-  // ドラッグライン
 
   if (
     aiming &&
@@ -1268,8 +1388,6 @@ function drawAim() {
     );
   }
 
-
-  // 発射方向
 
   const radians =
     aimAngle *
@@ -1350,8 +1468,6 @@ function drawAim() {
   ctx.stroke();
 
 
-  // 矢印
-
   const arrow =
     13;
 
@@ -1370,12 +1486,14 @@ function drawAim() {
 
 
   ctx.lineTo(
+
     endX -
     Math.cos(
       radians -
       0.5
     ) *
     arrow,
+
     endY +
     Math.sin(
       radians -
@@ -1386,12 +1504,14 @@ function drawAim() {
 
 
   ctx.lineTo(
+
     endX -
     Math.cos(
       radians +
       0.5
     ) *
     arrow,
+
     endY +
     Math.sin(
       radians +
@@ -1403,21 +1523,178 @@ function drawAim() {
 
   ctx.closePath();
 
-
   ctx.fill();
 }
 
 
 // =========================
-// 照準操作
+// 照準更新
+// =========================
+
+function updateAim(
+  pos
+) {
+
+  const dragX =
+    pos.x -
+    START_X;
+
+
+  const dragY =
+    pos.y -
+    START_Y;
+
+
+  dragDistance =
+    Math.hypot(
+      dragX,
+      dragY
+    );
+
+
+  const launchX =
+    -dragX;
+
+
+  const launchY =
+    -dragY;
+
+
+  if (
+    launchX >
+    1
+  ) {
+
+    const rawAngle =
+      Math.atan2(
+        -launchY,
+        launchX
+      ) *
+      180 /
+      Math.PI;
+
+
+    aimAngle =
+      clamp(
+        rawAngle,
+        -5,
+        25
+      );
+  }
+
+
+  aimPower =
+    clamp(
+      dragDistance /
+      165,
+      0.25,
+      1
+    );
+
+
+  angleValue.textContent =
+    `${aimAngle.toFixed(
+      1
+    )}°`;
+
+
+  powerValue.textContent =
+    `${Math.round(
+      aimPower *
+      100
+    )}%`;
+
+
+  drawAim();
+}
+
+
+// =========================
+// 指を離したとき
+// =========================
+
+function releaseAim(
+  event
+) {
+
+  if (
+    !aiming ||
+    event.pointerId !==
+    pointerId
+  ) {
+
+    return;
+  }
+
+
+  aiming =
+    false;
+
+
+  try {
+
+    canvas.releasePointerCapture(
+      pointerId
+    );
+
+  } catch {}
+
+
+  pointerId =
+    null;
+
+
+  if (
+    dragDistance <
+    28
+  ) {
+
+    drawAim();
+
+
+    result.textContent =
+      "もう少し大きく引っぱってください";
+
+
+    return;
+  }
+
+
+  throwCharacter(
+    getCharacter(),
+    aimAngle,
+    aimPower
+  );
+}
+
+
+// =========================
+// Pointer操作
 // =========================
 
 canvas.addEventListener(
   "pointerdown",
   event => {
 
+    // 結果画面なら
+    // タップでリセット
+
     if (
-      animationId !== null
+      gameState ===
+      "result"
+    ) {
+
+      resetGame();
+
+      return;
+    }
+
+
+    if (
+      gameState !==
+      "ready" ||
+      animationId !==
+      null
     ) {
 
       return;
@@ -1432,16 +1709,30 @@ canvas.addEventListener(
 
     const distance =
       Math.hypot(
+
         pos.x -
         START_X,
+
         pos.y -
         START_Y
       );
 
 
+    // スマホでは
+    // つかめる範囲を広げる
+
+    const grabRadius =
+      window.matchMedia(
+        "(pointer: coarse)"
+      ).matches
+
+        ? 165
+        : 105;
+
+
     if (
       distance >
-      105
+      grabRadius
     ) {
 
       return;
@@ -1508,135 +1799,6 @@ canvas.addEventListener(
 );
 
 
-function updateAim(
-  pos
-) {
-
-  const dragX =
-    pos.x -
-    START_X;
-
-
-  const dragY =
-    pos.y -
-    START_Y;
-
-
-  dragDistance =
-    Math.hypot(
-      dragX,
-      dragY
-    );
-
-
-  const launchX =
-    -dragX;
-
-
-  const launchY =
-    -dragY;
-
-
-  if (
-    launchX >
-    1
-  ) {
-
-    const rawAngle =
-      Math.atan2(
-        -launchY,
-        launchX
-      ) *
-      180 /
-      Math.PI;
-
-
-    aimAngle =
-      clamp(
-        rawAngle,
-        -5,
-        25
-      );
-  }
-
-
-  aimPower =
-    clamp(
-      dragDistance /
-      165,
-      0.25,
-      1
-    );
-
-
-  angleValue.textContent =
-    `${aimAngle.toFixed(1)}°`;
-
-
-  powerValue.textContent =
-    `${Math.round(
-      aimPower *
-      100
-    )}%`;
-
-
-  drawAim();
-}
-
-
-function releaseAim(
-  event
-) {
-
-  if (
-    !aiming ||
-    event.pointerId !==
-    pointerId
-  ) {
-
-    return;
-  }
-
-
-  aiming =
-    false;
-
-
-  try {
-
-    canvas.releasePointerCapture(
-      pointerId
-    );
-
-  } catch {}
-
-
-  pointerId =
-    null;
-
-
-  if (
-    dragDistance <
-    28
-  ) {
-
-    drawAim();
-
-    result.textContent =
-      "もう少し大きく引っぱってください";
-
-    return;
-  }
-
-
-  throwCharacter(
-    getCharacter(),
-    aimAngle,
-    aimPower
-  );
-}
-
-
 canvas.addEventListener(
   "pointerup",
   releaseAim
@@ -1650,7 +1812,7 @@ canvas.addEventListener(
 
 
 // =========================
-// 投射
+// 投げる
 // =========================
 
 function throwCharacter(
@@ -1663,8 +1825,17 @@ function throwCharacter(
     [];
 
 
+  gameState =
+    "flying";
+
+
   shareButton.hidden =
     true;
+
+
+  canvasHint.classList.add(
+    "hidden"
+  );
 
 
   const stats =
@@ -1687,8 +1858,11 @@ function throwCharacter(
 
   const effectiveSkips =
     Math.max(
+
       1,
+
       Math.round(
+
         stats.targetSkips *
         angleFactor *
         (
@@ -1777,7 +1951,7 @@ function throwCharacter(
       Math.max(
         0,
         worldX -
-        690
+        560
       );
 
 
@@ -1810,17 +1984,21 @@ function throwCharacter(
 
 
       spawnSplash(
+
         worldX,
+
         clamp(
           Math.abs(
             vy
           ) /
           3,
-          0.7,
-          1.5
+          0.75,
+          1.55
         )
       );
 
+
+      // 最終水切り
 
       if (
         skips >=
@@ -1832,24 +2010,28 @@ function throwCharacter(
           PIXELS_PER_METER;
 
 
-        updateAndDrawParticles(
-          cameraX
+        spawnSplash(
+          worldX,
+          1.6
         );
 
 
-        drawCharacter(
-          character,
-          screenX,
-          WATER_Y + 11,
-          rotation
-        );
+        startSinking(
 
-
-        finishThrow(
           character,
+
+          rotation,
+
+          worldX,
+
+          cameraX,
+
           skips,
+
           distance,
+
           launchAngle,
+
           launchPower
         );
 
@@ -1914,6 +2096,8 @@ function throwCharacter(
       `水切り ${skips}回`;
 
 
+    // 安全終了
+
     if (
       distance >
       350 ||
@@ -1924,11 +2108,22 @@ function throwCharacter(
       60
     ) {
 
-      finishThrow(
+      startSinking(
+
         character,
+
+        rotation,
+
+        worldX,
+
+        cameraX,
+
         skips,
+
         distance,
+
         launchAngle,
+
         launchPower
       );
 
@@ -1952,30 +2147,237 @@ function throwCharacter(
 
 
 // =========================
-// 終了
+// 沈むアニメーション
 // =========================
 
-function finishThrow(
+function startSinking(
+
   character,
+
+  rotation,
+
+  worldX,
+
+  cameraX,
+
   skips,
+
   distance,
+
   angle,
+
   power
 ) {
 
-  if (
-    animationId !==
-    null
-  ) {
+  gameState =
+    "sinking";
 
-    cancelAnimationFrame(
-      animationId
+
+  let sinkY =
+    WATER_Y + 3;
+
+
+  let sinkVelocity =
+    0.65;
+
+
+  let sinkRotation =
+    rotation;
+
+
+  let frames =
+    0;
+
+
+  function sinkFrame() {
+
+    drawBackground(
+      cameraX
+    );
+
+
+    updateAndDrawParticles(
+      cameraX
+    );
+
+
+    sinkY +=
+      sinkVelocity;
+
+
+    sinkVelocity +=
+      0.045;
+
+
+    sinkRotation +=
+      0.008;
+
+
+    frames++;
+
+
+    const screenX =
+      START_X +
+      worldX -
+      cameraX;
+
+
+    const alpha =
+      clamp(
+
+        0.82 -
+        (
+          sinkY -
+          WATER_Y
+        ) /
+        130,
+
+        0.35,
+
+        0.82
+      );
+
+
+    drawCharacter(
+
+      character,
+
+      screenX,
+
+      sinkY,
+
+      sinkRotation,
+
+      alpha,
+
+      "#0b4f6c"
+    );
+
+
+    // 水中の青み
+
+    ctx.fillStyle =
+      "rgba(42,132,169,0.09)";
+
+
+    ctx.fillRect(
+      0,
+      WATER_Y,
+      canvas.width,
+      canvas.height -
+      WATER_Y
+    );
+
+
+    if (
+      sinkY <
+        WATER_Y +
+        68 &&
+      frames <
+        60
+    ) {
+
+      animationId =
+        requestAnimationFrame(
+          sinkFrame
+        );
+
+
+      return;
+    }
+
+
+    // =====================
+    // 最終フレーム
+    // =====================
+
+    drawBackground(
+      cameraX
+    );
+
+
+    updateAndDrawParticles(
+      cameraX
+    );
+
+
+    drawCharacter(
+
+      character,
+
+      screenX,
+
+      WATER_Y + 68,
+
+      sinkRotation,
+
+      0.36,
+
+      "#0b4f6c"
+    );
+
+
+    ctx.fillStyle =
+      "rgba(42,132,169,0.11)";
+
+
+    ctx.fillRect(
+      0,
+      WATER_Y,
+      canvas.width,
+      canvas.height -
+      WATER_Y
+    );
+
+
+    // ここで初期画面を
+    // 再描画しない
+
+    finishThrow(
+
+      character,
+
+      skips,
+
+      distance,
+
+      angle,
+
+      power
     );
   }
 
 
   animationId =
+    requestAnimationFrame(
+      sinkFrame
+    );
+}
+
+
+// =========================
+// 結果
+// =========================
+
+function finishThrow(
+
+  character,
+
+  skips,
+
+  distance,
+
+  angle,
+
+  power
+) {
+
+  animationId =
     null;
+
+
+  gameState =
+    "result";
 
 
   const finalDistance =
@@ -2002,7 +2404,9 @@ function finishThrow(
         「${character}」
         ${finalDistance.toFixed(1)}m
       </strong>
+
       <br>
+
       水切り ${skips}回
       ・
       投射角 ${angle.toFixed(1)}°
@@ -2042,12 +2446,23 @@ function finishThrow(
     false;
 
 
+  canvasHint.textContent =
+    "画面をタップしてもう一度";
+
+
   canvasHint.classList.remove(
     "hidden"
   );
 
 
-  drawAim();
+  /*
+    重要：
+    ここでは drawAim() を呼ばない。
+
+    そのため、
+    水中に沈んだ最終フレームが
+    そのまま残る。
+  */
 }
 
 
@@ -2099,7 +2514,7 @@ ${window.location.href}`;
 
 
 // =========================
-// 入力変更
+// 文字変更
 // =========================
 
 input.addEventListener(
@@ -2107,12 +2522,26 @@ input.addEventListener(
   () => {
 
     if (
-      animationId !==
-      null
+      gameState ===
+        "flying" ||
+      gameState ===
+        "sinking"
     ) {
 
       return;
     }
+
+
+    gameState =
+      "ready";
+
+
+    particles =
+      [];
+
+
+    lastResult =
+      null;
 
 
     shareButton.hidden =
@@ -2131,6 +2560,15 @@ input.addEventListener(
       "文字を引っぱって投げてください";
 
 
+    canvasHint.textContent =
+      "文字をつかんで引っぱる";
+
+
+    canvasHint.classList.remove(
+      "hidden"
+    );
+
+
     drawAim();
   }
 );
@@ -2142,16 +2580,27 @@ input.addEventListener(
 
 window.testCharacters =
 function (
+
   characters = [
+
     "一",
+
     "水",
+
     "Ⅰ",
+
     "鬱",
+
     "〇",
+
     "山",
+
     "川",
+
     "凹",
+
     "卍",
+
     "㍿"
   ]
 ) {
@@ -2227,7 +2676,9 @@ function (
 // =========================
 
 angleValue.textContent =
-  `${aimAngle.toFixed(1)}°`;
+  `${aimAngle.toFixed(
+    1
+  )}°`;
 
 
 powerValue.textContent =
